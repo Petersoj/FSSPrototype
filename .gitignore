@@ -1,0 +1,88 @@
+# Ignore file system metadata files
+.DS_Store
+
+
+#
+# BEGIN Ignore Quartus Prime
+#
+
+# From: https://gist.github.com/nhasbun/71918796044b7ba89d6662133495f754
+# ignore Quartus II generated files
+*_generation_script*
+*_inst.vhd
+*.bak
+*.cmp
+*.done
+*.eqn
+*.hex
+*.html
+*.jdi
+*.mif
+*.pin
+*.pof
+*.ptf.*
+*.qar
+*.qarlog
+*.qws
+*.rpt
+*.smsg
+*.sof
+*.sopc_builder
+*.summary
+*.tcl
+*example*
+*sopc_*
+# *.sdc # I want those timing files
+
+# ignore Quartus II generated folders
+*/db/
+*/incremental_db/
+*/simulation/
+*/timing/
+*/testbench/
+*/*_sim/
+incremental_db/
+db/
+_output_files/
+PLLJ_PLLSPE_INFO.txt
+
+# Ignore Quartus Prime project files to prevent constant unnecessary project file changes
+# if Quartus versions are different on machines
+*.qpf
+*.qsf
+
+#
+# END Ignore Quartus Prime
+#
+
+
+#
+# BEGIN Ignore LaTeX
+#
+
+## Core LaTeX/pdflatex auxiliary files:
+docs/**/*.aux
+docs/**/*.lof
+docs/**/*.log
+docs/**/*.lot
+docs/**/*.fls
+docs/**/*.out
+docs/**/*.toc
+docs/**/*.fmt
+docs/**/*.fot
+docs/**/*.cb
+docs/**/*.cb2
+docs/**/.*.lb
+docs/**/*.bbl
+docs/**/*.blg
+## LaTeX Build tool auxiliary files:
+docs/**/*.fdb_latexmk
+docs/**/*.synctex
+docs/**/*.synctex(busy)
+docs/**/*.synctex.gz
+docs/**/*.synctex.gz(busy)
+docs/**/*.pdfsync
+
+#
+# END Ignore LaTeX
+#

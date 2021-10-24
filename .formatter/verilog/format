@@ -1,0 +1,34 @@
+#!/bin/bash
+
+VERILOG_FORMATTER_PATH=$(dirname $0)/istyle-verilog-formatter
+VERILOG_FORMATTER_BIN=${VERILOG_FORMATTER_PATH}/bin/release/iStyle
+
+if [ ! -f "$VERILOG_FORMATTER_BIN" ]; then
+    echo "${VERILOG_FORMATTER_BIN} doesn\'t exist. Running 'make'..."
+    make --directory "$VERILOG_FORMATTER_PATH"
+fi
+
+# Loop through all arguments and format the specified files or recursively format
+# files in specified directories.
+count=0
+for path in "$@"; do
+    if [ -d "$path" ]; then
+        # Set the Internal Field Separator for bash so that \n is used as a delimiter
+        # in for loops.
+        IFS=$'\n'
+
+        for subpath in $(find "$path" -iname *.v -o -iname *.sv); do
+            echo "Formatting ${subpath}."
+            eval $VERILOG_FORMATTER_BIN "$subpath" --convert-tabs --suffix=none --style=kr
+            ((count++))
+        done
+    elif [ -f "$path" ]; then
+        echo "Formatting ${path}."
+        eval $VERILOG_FORMATTER_BIN "$path" --convert-tabs --suffix=none --style=kr
+        ((count++))
+    else
+        echo "$path does not exist." 1>&2;
+    fi
+done
+
+echo "Formatted $count files."

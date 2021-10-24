@@ -1,0 +1,3 @@
+[submodule ".formatter/verilog/istyle-verilog-formatter"]
+	path = .formatter/verilog/istyle-verilog-formatter
+	url = https://github.com/thomasrussellmurphy/istyle-verilog-formatter
