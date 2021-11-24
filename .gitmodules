@@ -1,3 +1,6 @@
 [submodule ".formatter/verilog/istyle-verilog-formatter"]
 	path = .formatter/verilog/istyle-verilog-formatter
 	url = https://github.com/thomasrussellmurphy/istyle-verilog-formatter
+[submodule "CompactRISC16"]
+	path = CompactRISC16
+	url = https://github.com/Petersoj/CompactRISC16.git
