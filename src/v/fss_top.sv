@@ -14,7 +14,9 @@ module fss_top
         input I_NRESET,
         input [10:0] I_MEM_ADDRESS_B,
         output wire [6:0] O_7_SEGMENT_DISPLAY [5:0],
-        output wire [4:0] O_LED_FLAGS);
+        output wire [4:0] O_LED_FLAGS,
+		  output O_SCL,
+		  inout SDA);
 
 // This value specified the number of clock cycles that should elapse before passing on
 // 'I_CLK' to 'i_cr16'. This is used to "warm up" BRAM to prepare its outputs for the
@@ -33,15 +35,19 @@ reg cr16_enable = 1'b1;
 wire [15:0] cr16_ext_mem_data;
 wire [15:0] cr16_ext_mem_address;
 wire cr16_ext_mem_write_enable;
+wire [15:0] mapped_ext_mem_data;
 wire [15:0] result_bus;
 wire [15:0] pc;
+
+wire sda;
+wire buff_read;
 
 // Reg bits for 7-segment display input
 localparam integer P_DISPLAY_BIT_WIDTH = 4 * 6;
 reg [P_DISPLAY_BIT_WIDTH - 1 : 0] display_bits = {P_DISPLAY_BIT_WIDTH{1'd0}};
 
 // Instantiate BRAM module with given init file
-bram #(.P_BRAM_INIT_FILE("resources/bram_init/sub_tests/sub32.dat"),
+bram #(.P_BRAM_INIT_FILE("CompactRISC16/resources/bram_init/cr16_top/test_sub32/sub32.dat"),
        .P_BRAM_INIT_FILE_START_ADDRESS('d0),
        .P_DATA_WIDTH('d16),
        .P_ADDRESS_WIDTH('d11)) // Synthesis takes a long time with 16 bits, use 10 bits for testing
@@ -55,6 +61,28 @@ bram #(.P_BRAM_INIT_FILE("resources/bram_init/sub_tests/sub32.dat"),
       .I_WRITE_ENABLE_B(1'b0),
       .O_DATA_A(o_mem_data_a),
       .O_DATA_B(o_mem_data_b));
+		
+// Instantiate External Memory Map module
+ext_mem_map #( .P_DATA_WIDTH('d16),
+					.P_ADDRESS_WIDTH('d2))
+             ( .I_CLK(I_CLK),
+				   .I_NRESET(I_NRESET),
+               .I_DATA_EXT(cr16_ext_mem_data),
+               .I_ADDRESS_EXT(cr16_ext_mem_address),
+               .I_WRITE_ENABLE_EXT(cr16_ext_mem_write_enable),
+					.IO_SDA(sda),
+					.O_SCL(O_SCL),
+               .O_DATA_EXT(mapped_ext_mem_data),
+					.O_BUFF_READ(buff_read));
+
+// Instantiate I2C Bus
+i2c_bus ( .SCL(scl),
+          .SDA(sda),
+			 .I_SCL_T(1'b1),
+			 .I_SDA_T(1'b1));
+
+assign O_SCL = scl;
+assign O_SDA = sda;
 
 // Instantiate CR16 module
 cr16 i_cr16
@@ -62,7 +90,7 @@ cr16 i_cr16
       .I_ENABLE(cr16_enable),
       .I_NRESET(I_NRESET),
       .I_MEM_DATA(o_mem_data_a),
-      .I_EXT_MEM_DATA(16'b0),
+      .I_EXT_MEM_DATA(mapped_ext_mem_data),
       .O_MEM_DATA(i_mem_data_a),
       .O_MEM_ADDRESS(i_mem_address_a),
       .O_MEM_WRITE_ENABLE(i_mem_write_enable_a),
