@@ -20,7 +20,7 @@ module fss_top
         input [10:0] I_MEM_ADDRESS_B,
         output wire [6:0] O_7_SEGMENT_DISPLAY [5:0],
         output wire [4:0] O_LED_FLAGS,
-        output O_SCL,
+        inout SCL,
         inout SDA);
 
 // This value specified the number of clock cycles that should elapse before passing on
@@ -68,26 +68,16 @@ bram #(.P_BRAM_INIT_FILE("CompactRISC16/resources/bram_init/cr16_top/test_sub32/
       .O_DATA_B(o_mem_data_b));
 
 // Instantiate External Memory Map module
-ext_mem_map #( .P_DATA_WIDTH('d16),
-               .P_ADDRESS_WIDTH('d2))
-            ( .I_CLK(I_CLK),
-              .I_NRESET(I_NRESET),
-              .I_DATA_EXT(cr16_ext_mem_data),
-              .I_ADDRESS_EXT(cr16_ext_mem_address),
-              .I_WRITE_ENABLE_EXT(cr16_ext_mem_write_enable),
-              .IO_SDA(sda),
-              .O_SCL(O_SCL),
-              .O_DATA_EXT(mapped_ext_mem_data),
-              .O_BUFF_READ(buff_read));
-
-// Instantiate I2C Bus
-i2c_bus ( .SCL(scl),
-          .SDA(sda),
-          .I_SCL_T(1'b1),
-          .I_SDA_T(1'b1));
-
-assign O_SCL = scl;
-assign O_SDA = sda;
+ext_mem #( .P_DATA_WIDTH('d16),
+           .P_ADDRESS_WIDTH('d2))
+         ( .I_CLK(I_CLK),
+           .I_NRESET(I_NRESET),
+           .I_EXT_MEM_DATA(cr16_ext_mem_data),
+           .I_EXT_MEM_ADDRESS(cr16_ext_mem_address),
+           .I_EXT_MEM_WRITE_ENABLE(cr16_ext_mem_write_enable),
+           .O_EXT_MEM_DATA(mapped_ext_mem_data),
+           .O_SDA(SDA),
+			  .O_SCL(SCL));
 
 // Instantiate CR16 module
 cr16 i_cr16
