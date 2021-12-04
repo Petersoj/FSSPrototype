@@ -4,19 +4,24 @@
 // Create Date: 11/23/2021
 // Module Name: fss_top
 // Description: This is the top-level module of the Fully-Synchronized Synthesizer Prototype. This
-// module is integrated with the CR16 processor and a BRAM memory module, which allows for the 
+// module is integrated with the CR16 processor and a BRAM memory module, which allows for the
 // execution of preloaded machine code files according to our custom ISA.
 // Authors: Jacob Peterson, Brady Hartog, Isabella Gilman, Nate Hansen
 //
 
+// @param I_CLK               the clock signal
+// @param I_NRESET            the active-low asynchronous reset signal
+// @param I_MEM_ADDRESS_B     input to port B of BRAM
+// @param O_7_SEGMENT_DISPLAY output to the 7-segment displays
+// @param O_LED_FLAGS         ALU status flags output to the FPGA board LEDs
 module fss_top
        (input I_CLK,
         input I_NRESET,
         input [10:0] I_MEM_ADDRESS_B,
         output wire [6:0] O_7_SEGMENT_DISPLAY [5:0],
         output wire [4:0] O_LED_FLAGS,
-		  output O_SCL,
-		  inout SDA);
+        output O_SCL,
+        inout SDA);
 
 // This value specified the number of clock cycles that should elapse before passing on
 // 'I_CLK' to 'i_cr16'. This is used to "warm up" BRAM to prepare its outputs for the
@@ -61,25 +66,25 @@ bram #(.P_BRAM_INIT_FILE("CompactRISC16/resources/bram_init/cr16_top/test_sub32/
       .I_WRITE_ENABLE_B(1'b0),
       .O_DATA_A(o_mem_data_a),
       .O_DATA_B(o_mem_data_b));
-		
+
 // Instantiate External Memory Map module
 ext_mem_map #( .P_DATA_WIDTH('d16),
-					.P_ADDRESS_WIDTH('d2))
-             ( .I_CLK(I_CLK),
-				   .I_NRESET(I_NRESET),
-               .I_DATA_EXT(cr16_ext_mem_data),
-               .I_ADDRESS_EXT(cr16_ext_mem_address),
-               .I_WRITE_ENABLE_EXT(cr16_ext_mem_write_enable),
-					.IO_SDA(sda),
-					.O_SCL(O_SCL),
-               .O_DATA_EXT(mapped_ext_mem_data),
-					.O_BUFF_READ(buff_read));
+               .P_ADDRESS_WIDTH('d2))
+            ( .I_CLK(I_CLK),
+              .I_NRESET(I_NRESET),
+              .I_DATA_EXT(cr16_ext_mem_data),
+              .I_ADDRESS_EXT(cr16_ext_mem_address),
+              .I_WRITE_ENABLE_EXT(cr16_ext_mem_write_enable),
+              .IO_SDA(sda),
+              .O_SCL(O_SCL),
+              .O_DATA_EXT(mapped_ext_mem_data),
+              .O_BUFF_READ(buff_read));
 
 // Instantiate I2C Bus
 i2c_bus ( .SCL(scl),
           .SDA(sda),
-			 .I_SCL_T(1'b1),
-			 .I_SDA_T(1'b1));
+          .I_SCL_T(1'b1),
+          .I_SDA_T(1'b1));
 
 assign O_SCL = scl;
 assign O_SDA = sda;
