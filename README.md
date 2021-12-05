@@ -1,3 +1,5 @@
+<p align="center"><a href="https://petersoj.github.io/FSSPrototype/" target="_blank"><img width="60%" src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/top_panel_artwork.png" alt="FSS prototype top-panel concept"></a></p>
+
 # Fully-Synchronized Synthesizer (FSS) Prototype
 
 This FSS prototype demonstrates the future of interfacing with a music synthesizer. Musicians often switch between programs on their synth as part of their creative process when experimenting with different sounds. However, the control knobs on their synth can't dynamically update to visually display the true value of that knob when switching between prorams. This FSS prototype solves this issue by providing program-synchronized ring displays surrounding control knobs flush with a top panel, along with internal components housed in a beautiful wooden chassis, and interfaced with via a single USB cable. This repository contains various source files, design files, datasheets, and documentation relevant to the development of this prototype. This prototype serves as the final project for the Computer Design Laboratory ECE 3710 class at The University of Utah for Group 2. As a requirement for this class, this final project uses the [`CompactRISC16`](https://github.com/Petersoj/CompactRISC16) CPU and assembler that our group built as well. This CPU runs on an FPGA and executes our custom assembly code which is responsible for the FSS interface logic and communication. The FPGA board interfaces with the FSS prototype via I2C using a braided USB cable with the D+/D- pins adapted to be the SCL and SDA pins.
@@ -7,6 +9,14 @@ This FSS prototype demonstrates the future of interfacing with a music synthesiz
 - Brady Hartog
 - Isabella Gilman
 - Nate Hansen
+
+## Assembling `fss.asm`
+1. Ensure that the `CompactRISC16` submodule has been initialized and updated via: `git submodule update --init`
+2. Run the assembler via: `./CompactRISC16/assembler/assembler src/asm/fss.asm -o resources/bram_init/fss.dat -p 4096 -v 0 -b HEX`
+  - `-p 4096` sets the max padding lines to 4096 (which is 2^12 due to `fss_top` instantiating `bram` with a 12-bit address space) in the output machine code file
+  - `-v 0` sets the padding line value to 0 (which initializes empty BRAM to all zeros) in the output machine code file
+  - `-b HEX` sets the number base to hexadecimal in the output machine code file
+3. More about the CR16 assembler used in this project [here](https://github.com/Petersoj/CompactRISC16#assembler).
 
 ## Verilog Source Naming Conventions and Format
 - File names, module names, and wire/reg assignment names should be snake case (e.g. `my_verilog_module.v`)

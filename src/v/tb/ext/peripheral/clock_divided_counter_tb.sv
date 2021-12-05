@@ -26,12 +26,12 @@ always #1000 expected_count = expected_count + 1;
 always #10 clk = ~clk; // Every 20 nanosecond period, 1 cycle of the 50 MHz clock has passed
 
 clock_divided_counter
-        #(.P_CLK_CYCLES_PER_DIVISION(P_CLK_CYCLES_PER_DIVISION),
-          .P_WIDTH(P_WIDTH))
-        uut
-        (.I_CLK(clk),
-         .I_NRESET(nreset),
-         .O_COUNT(count));
+    #(.P_CLK_CYCLES_PER_DIVISION(P_CLK_CYCLES_PER_DIVISION),
+      .P_WIDTH(P_WIDTH))
+    uut
+    (.I_CLK(clk),
+     .I_NRESET(nreset),
+     .O_COUNT(count));
 
 initial begin
     // Set initial values

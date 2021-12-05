@@ -18,7 +18,7 @@ module clock_divided_counter
          parameter integer P_WIDTH = 32)
        (input I_CLK,
         input I_NRESET,
-        output reg [P_WIDTH - 1 : 0] O_COUNT);
+        output reg [P_WIDTH - 1 : 0] O_COUNT = {P_WIDTH{1'b0}});
 
 localparam integer P_CLK_DIVIDER_COUNT_WIDTH = $clog2(P_CLK_CYCLES_PER_DIVISION);
 

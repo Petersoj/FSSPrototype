@@ -3,35 +3,36 @@
 #
 # Create Date: 12/04/2021
 # Name: fss
-# Description: An assembly code file containing the source code for the 
-# operation of the FSS Prototype. This code will load onto a De1-SoC FPGA 
-# to drive I2C protocol communication with the device hardware. Data is 
-# read from various buttons and rotary encoders, and correspoding data is 
-# written to a series of SMD LEDs. 
-# Authors: Nate Hansen, Jacob Peterson
+# Description: An assembly code file containing the source code for the operation of the
+# FSS Prototype. This code will load onto a De1-SoC FPGA to drive I2C protocol communication
+# with the device hardware. Data is read from various buttons and rotary encoders, and
+# correspoding data is written to a series of SMD LEDs that are driven with LED driver
+# shift registers.
+# Authors: Nate Hansen, Jacob Peterson, Brady Hartog, Isabella Gilman
 #
 # Notes:
-#  GPIO Addresses:
-#    U10: 0x38
-#    U11: 0x39
 #
-#  Bit-Encoding for U10:
-#    P0      P1      P2     P3     P4      P5      P6      P7
-#    SDI     CLK     LE     Save   Prog1   Prog2   Prog3   Play/Pause
-#  
-#  Bit-Encoding for U11:
-#    P0      P1      P2     P3     P4      P5      P6      P7
-#    SW1A    SW1B    SW2A   SW2B   SW3A    SW3B    unused  unused
+# I/O Port Expander I2C Addresses:
+#   U10: 0x38
+#   U11: 0x39
+#
+# Bit-Encoding for I/O Port Expander U10:
+#   P0      P1      P2     P3     P4      P5      P6      P7
+#   SDI     CLK     LE     Save   Prog1   Prog2   Prog3   Play/Pause
+#
+# Bit-Encoding for I/O Port Expander U11:
+#   P0      P1      P2     P3     P4      P5      P6      P7
+#   SW1A    SW1B    SW2A   SW2B   SW3A    SW3B    unused  unused
 
-`define ROTARY_ENCODER_1A
-`define ROTARY_ENCODER_1B
-`define ROTARY_ENCODER_2A
-`define ROTARY_ENCODER_2B
-`define ROTARY_ENCODER_3A
-`define ROTARY_ENCODER_3B
-
-`define U10_BYTE
-`define U11_BYTE
+#`define ROTARY_ENCODER_1A
+#`define ROTARY_ENCODER_1B
+#`define ROTARY_ENCODER_2A
+#`define ROTARY_ENCODER_2B
+#`define ROTARY_ENCODER_3A
+#`define ROTARY_ENCODER_3B
+#
+#`define U10_BYTE
+#`define U11_BYTE
 
 `define R_ADDRESS_MICROSECOND_0 2
 `define R_ADDRESS_MICROSECOND_1 3
@@ -40,10 +41,10 @@
 
 
 .main
-  # initialize ring LEDs to 
+  # initialize ring LEDs to
   # load LED for program 1.
   .initialize_fss
-  
+
   #TODO: Implement
 
   # main loop, infinite.
@@ -53,7 +54,7 @@
 
 
 ##
-# Initializes the state of the FSS to the desired LED display. 
+# Initializes the state of the FSS to the desired LED display.
 ##
 .initialize_fss
   #TODO: Implement
@@ -71,8 +72,8 @@
 # Sets the LEDs to match a pattern given in the first 4 argument registers.
 # This is done by sending each bit sequentially on the SDI bit through i2c
 # at address 0x38. After each single bit write, we must control the CLK signal
-# for the LED drivers. After all bits have been shifted in, we reset the 
-# latch enable signal to allow the new LED pattern to appear. We set latch 
+# for the LED drivers. After all bits have been shifted in, we reset the
+# latch enable signal to allow the new LED pattern to appear. We set latch
 # again before returning to prepare for the next pattern change.
 #
 # @param    r14 - 00 + P/P + P3 + P2 + P1 + PS + ring3[15:9]
@@ -115,9 +116,9 @@
     RET
 
 ##
-# Polls for the state of the FSS quadrature-encoded rotary enocoders 
+# Polls for the state of the FSS quadrature-encoded rotary enocoders
 # over i2c.
-# 
+#
 ##
 .get_rotary_quadrature
     #TODO: Implement
@@ -157,7 +158,7 @@
 #
 
 ##
-# Sleeps execution for a specified number of microseconds. Maximized at 
+# Sleeps execution for a specified number of microseconds. Maximized at
 # 65,535 microseconds due to 16-bit register argument's limit.
 #
 # @param r11 - number of microseconds to sleep
@@ -172,9 +173,9 @@
   RET
 
 ##
-# Subtracts two 48-bit numbers. This subroutine is special and expects 
+# Subtracts two 48-bit numbers. This subroutine is special and expects
 # the caller to have pushed the numbers onto the stack in the order:
-# 
+#
 #  A0
 #  A1
 #  A2
@@ -182,15 +183,9 @@
 #  B1
 #  B2
 #
-# where A0 are the least-significant 16 bits of A. The method performs 
+# where A0 are the least-significant 16 bits of A. The method performs
 # B - A and returns the least-significant 16 bits of the result.
 ##
 .sub_48bit
     #TODO: Implement
     RET
-
-
-
-
-
-
