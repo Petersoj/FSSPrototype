@@ -73,8 +73,8 @@ i2c_bus i_i2c_bus
 always @(posedge I_CLK) begin
     if (!I_NRESET) begin
         // Write high impedance to I2C bus instead of zeros which pull low
-        scl_t = 1'b1;
-        sda_t = 1'b1;
+        scl_t <= 1'b1;
+        sda_t <= 1'b1;
     end
     else begin
         if (I_EXT_MEM_WRITE_ENABLE) begin

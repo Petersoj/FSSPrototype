@@ -24,6 +24,9 @@
 #   P0      P1      P2     P3     P4      P5      P6      P7
 #   SW1A    SW1B    SW2A   SW2B   SW3A    SW3B    unused  unused
 
+
+
+
 #`define ROTARY_ENCODER_1A
 #`define ROTARY_ENCODER_1B
 #`define ROTARY_ENCODER_2A
@@ -34,11 +37,41 @@
 #`define U10_BYTE
 #`define U11_BYTE
 
-`define R_ADDRESS_MICROSECOND_0 2
-`define R_ADDRESS_MICROSECOND_1 3
-`define R_ADDRESS_MICROSECOND_2 4
+#`define R_ADDRESS_MICROSECOND_0 2
+#`define R_ADDRESS_MICROSECOND_1 3
+#`define R_ADDRESS_MICROSECOND_2 4
 
+`define STACK_PTR_LOWER 0xFF
+`define STACK_PTR_UPPER 0x03
 
+##
+# The program initialization routine.
+#
+# @return void
+##
+.init
+    # Initialize stack pointer
+    MOVIL   rsp STACK_PTR_LOWER
+    MOVIU   rsp STACK_PTR_UPPER
+
+# TODO Remove test
+.test
+    MOVIL   r11 0x00
+    MOVIU   r11 0x00
+    MOVIL   r12 0x01
+    MOVIU   r12 0x00
+    MOVIL   r13 0x00
+    MOVIU   r13 0x00
+    CALL    .sleep
+
+    MOV     r0  .data
+    LOAD    r1  r0
+    ADDI    r1  1
+    STORE   r0  r1
+
+    JUC     .test
+.data
+0x0000
 
 .main
   # initialize ring LEDs to
@@ -128,8 +161,78 @@
 # END: Subroutines to poll data from controls
 #
 
+
+
+
+
+
 #
-# BEGIN: I2C interfacing subroutines
+# BEGIN: External/peripheral memory interface functions
+#
+
+#
+# BEGIN: External/peripheral memory interface address defines
+#
+
+`define EXT_R_ADDRESS_SCL_LOWER 0x00
+`define EXT_R_ADDRESS_SCL_UPPER 0x00
+`define EXT_R_ADDRESS_SDA_LOWER 0x01
+`define EXT_R_ADDRESS_SDA_UPPER 0x00
+`define EXT_R_ADDRESS_MICROSECOND_0_LOWER 0x02
+`define EXT_R_ADDRESS_MICROSECOND_0_UPPER 0x00
+`define EXT_R_ADDRESS_MICROSECOND_1_LOWER 0x03
+`define EXT_R_ADDRESS_MICROSECOND_1_UPPER 0x00
+`define EXT_R_ADDRESS_MICROSECOND_2_LOWER 0x04
+`define EXT_R_ADDRESS_MICROSECOND_2_UPPER 0x00
+
+`define EXT_W_ADDRESS_SCL_LOWER 0x00
+`define EXT_W_ADDRESS_SCL_UPPER 0x00
+`define EXT_W_ADDRESS_SDA_LOWER 0x01
+`define EXT_W_ADDRESS_SDA_UPPER 0x00
+
+#
+# END: External/peripheral memory interface address defines
+#
+
+##
+# Returns a bit array containing the value of the microsecond counter external peripheral.
+#
+# @return r10 - a pointer to the result bit array with a length of 3 and the following
+#               mapping: | Index | Bits    |
+#                        | 0     | [15:0]  |
+#                        | 1     | [31:16] |
+#                        | 2     | [47:32] |
+##
+.get_microseconds
+    MOVIL   r0  EXT_R_ADDRESS_MICROSECOND_0_LOWER
+    MOVIU   r0  EXT_R_ADDRESS_MICROSECOND_0_UPPER
+    MOVIL   r1  EXT_R_ADDRESS_MICROSECOND_1_LOWER
+    MOVIU   r1  EXT_R_ADDRESS_MICROSECOND_1_UPPER
+    MOVIL   r2  EXT_R_ADDRESS_MICROSECOND_2_LOWER
+    MOVIU   r2  EXT_R_ADDRESS_MICROSECOND_2_UPPER
+
+    MOV     r3  .get_microseconds:return_array_pointer
+
+    LOADX   r4  r0
+    STORE   r3  r4
+    ADDI    r3  1
+
+    LOADX   r4  r1
+    STORE   r3  r4
+    ADDI    r3  1
+
+    LOADX   r4  r2
+    STORE   r3  r4
+
+    MOV     r10 .get_microseconds:return_array_pointer
+    RET
+    .get_microseconds:return_array_pointer
+    0x000
+    0x000
+    0x000
+
+#
+# BEGIN: I2C interfacing functions
 #
 
 ##
@@ -140,7 +243,7 @@
 # @return r10 - data read at address r11
 ##
 .read_byte_i2c
-  #TODO: Implement
+  # TODO: Implement
   RET
 
 ##
@@ -150,42 +253,214 @@
 # @param r12 - data to write at address r11
 ##
 .write_byte_i2c
-  #TODO: Implement
+  # TODO: Implement
   RET
 
 #
-# END: I2C interfacing subroutines
+# END: I2C interfacing functions
+#
+
+#
+# END: External/peripheral memory interface functions
+#
+
+
+
+
+
+
+#
+# BEGIN: Utility functions
 #
 
 ##
-# Sleeps execution for a specified number of microseconds. Maximized at
-# 65,535 microseconds due to 16-bit register argument's limit.
+# Sleeps for the given number of microseconds.
 #
-# @param r11 - number of microseconds to sleep
+# @param r11 - bits [15:0] of the (unsigned) number of microseconds to sleep for
+# @param r12 - bits [31:16] of the (unsigned) number of microseconds to sleep for
+# @param r13 - bits [47:32] of the (unsigned) number of microseconds to sleep for
+#
+# @return void
 ##
 .sleep
-  MOVIL   r0  R_ADDRESS_MICROSECOND_2
-  MOVIU   r0  0
-  LOADX   r1  r0
+    # Push given arguments before subroutine calls
+    PUSH    r13
+    PUSH    r12
+    PUSH    r11
+    MOV     r9  rsp
+    ADDI    r9  1
 
-  #TODO: Implement
+    # Push caller-saved argument registers
+    PUSH r9
+    # Get 'entry' microsecond count
+    CALL    .get_microseconds
+    # Pop caller-saved argument registers
+    POP  r9
 
-  RET
+    # Load in the returned bits array
+    LOAD    r0  r10
+    ADDI    r10 1
+    LOAD    r1  r10
+    ADDI    r10 1
+    LOAD    r2  r10
+    # Push 'entry' microsecond count onto the stack and setup first arg for '.subtract_48bit'
+    PUSH    r2
+    PUSH    r1
+    PUSH    r0
+    MOV     r11 rsp
+    ADDI    r11 1
 
-##
-# Subtracts two 48-bit numbers. This subroutine is special and expects
-# the caller to have pushed the numbers onto the stack in the order:
-#
-#  A0
-#  A1
-#  A2
-#  B0
-#  B1
-#  B2
-#
-# where A0 are the least-significant 16 bits of A. The method performs
-# B - A and returns the least-significant 16 bits of the result.
-##
-.sub_48bit
-    #TODO: Implement
+    .sleep:loop
+
+    # Push caller-saved argument registers
+    PUSH    r9
+    PUSH    r11
+    # Get 'latest' microsecond count
+    CALL    .get_microseconds
+    # Pop caller-saved argument registers
+    POP     r11
+    POP     r9
+
+    # Load in the returned bits array
+    LOAD    r0  r10
+    ADDI    r10 1
+    LOAD    r1  r10
+    ADDI    r10 1
+    LOAD    r2  r10
+    # Push 'latest' microsecond count onto the stack and setup second arg for '.subtract_48bit'
+    PUSH    r2
+    PUSH    r1
+    PUSH    r0
+    MOV     r12 rsp
+    ADDI    r12 1
+
+    # Push caller-saved argument registers
+    PUSH    r9
+    PUSH    r11
+    PUSH    r12
+    # Get microsecond difference between 'entry' and 'latest' microsecond timestamps
+    CALL    .subtract_48bit
+    # Pop caller-saved argument registers
+    POP     r12
+    POP     r11
+    POP     r9
+
+    # Load in the returned bits array
+    LOAD    r0  r10
+    ADDI    r10 1
+    LOAD    r1  r10
+    ADDI    r10 1
+    LOAD    r2  r10
+
+    # Pop the no-longer-needed 'latest' microsecound count
+    POP     r8
+    POP     r8
+    POP     r8
+
+    # Load in given arguments by peeking them on the stack
+    MOV     r8  r9
+    LOAD    r3  r8
+    ADDI    r8  1
+    LOAD    r4  r8
+    ADDI    r8  1
+    LOAD    r5  r8
+
+    # Compare elapsed microseconds with given arguments and loop as needed
+    CMP     r2  r5
+    JLO     .sleep:loop
+    CMP     r1  r4
+    JLO     .sleep:loop
+    CMP     r0  r3
+    JLO     .sleep:loop
+
+    # Pop 'entry' microseconds
+    POP     r0
+    POP     r0
+    POP     r0
+
+    # Pop given arguments
+    POP     r0
+    POP     r0
+    POP     r0
+
     RET
+
+
+##
+# Subtracts two unsigned 48-bit numbers and sets the ALU status flags accordingly. The two
+# operands of this function call are 'a' (the first operand) and 'b' (the second operand).
+# The order of subtraction is: 'b - a'.
+#
+# @param r11 - a pointer to the first operand bit array with a length of 3 and the following
+#              mapping: | Name | Index | Bits    |
+#                       | a0   | 0     | [15:0]  |
+#                       | a1   | 1     | [31:16] |
+#                       | a2   | 2     | [47:32] |
+# @param r12 - a pointer to the second operand bit array with the same structure as 'r11'
+#
+# @return r10 - a pointer to the result bit array with the same structure as 'r11'
+##
+.subtract_48bit
+    # Load 'a' from MSB to LSB: r2 r1 r0
+    LOAD    r0  r11
+    ADDI    r11 1
+    LOAD    r1  r11
+    ADDI    r11 1
+    LOAD    r2  r11
+
+    # Load 'b' from MSB to LSB: r5 r4 r3
+    LOAD    r3  r12
+    ADDI    r12 1
+    LOAD    r4  r12
+    ADDI    r12 1
+    LOAD    r5  r12
+
+    MOV     r6  .subtract_48bit:return_array_pointer
+
+    # The 'LSF r7' in the following lines will save the ALU status flags if the subtracted numbers
+    # are different. This is because we want to store the status flags only for those bits
+    # that are different in the operands 16-bit segments.
+
+    # Subtract lower 16-bits
+    SUB     r3  r0
+    BHS     1
+    SUBI    r4  1       # Borrow occured
+
+    LSF     r7          # Always load status flags for least-significant bits
+
+    STORE   r6  r3
+    ADDI    r6  1
+
+    # Subtract middle 16-bits
+    SUB     r4  r1
+    BHS     1
+    SUBI    r5  1       # Borrow occured
+
+    BEQ     1           # Skip loading status flags if numbers are the same for these bits
+    LSF     r7
+
+    STORE   r6  r4
+    ADDI    r6  1
+
+    # Subtract upper 16-bits
+    SUB     r5  r2
+
+    BEQ     1           # Skip loading status flags if numbers are the same for these bits
+    LSF     r7
+
+    STORE   r6  r5
+
+    # Store the incrementally-saved status flags
+    SSF     r7
+
+    MOV     r10 .subtract_48bit:return_array_pointer
+    RET
+    .subtract_48bit:return_array_pointer
+    0x000
+    0x000
+    0x000
+
+#
+# END: Utility functions
+#
+
