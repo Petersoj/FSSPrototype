@@ -43,7 +43,7 @@
 .main
   # initialize ring LEDs to
   # load LED for program 1.
-  .initialize_fss
+  CALL .initialize_fss
 
   #TODO: Implement
 
@@ -166,7 +166,7 @@
 .sleep
   MOVIL   r0  R_ADDRESS_MICROSECOND_2
   MOVIU   r0  0
-  LOADEX  r1  r0
+  LOADX   r1  r0
 
   #TODO: Implement
 

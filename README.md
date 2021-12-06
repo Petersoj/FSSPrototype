@@ -12,10 +12,14 @@ This FSS prototype demonstrates the future of interfacing with a music synthesiz
 
 ## Assembling `fss.asm`
 1. Ensure that the `CompactRISC16` submodule has been initialized and updated via: `git submodule update --init`
-2. Run the assembler via: `./CompactRISC16/assembler/assembler src/asm/fss.asm -o resources/bram_init/fss.dat -p 4096 -v 0 -b HEX`
-  - `-p 4096` sets the max padding lines to 4096 (which is 2^12 due to `fss_top` instantiating `bram` with a 12-bit address space) in the output machine code file
-  - `-v 0` sets the padding line value to 0 (which initializes empty BRAM to all zeros) in the output machine code file
-  - `-b HEX` sets the number base to hexadecimal in the output machine code file
+2. Run the assembler via:
+
+   ```
+   ./CompactRISC16/assembler/assembler src/asm/fss.asm -o resources/bram_init/fss.dat -p 4096 -v 0 -b HEX
+   ```
+  * `-p 4096` sets the max padding lines to 4096 (which is 2^12 due to `fss_top` instantiating `bram` with a 12-bit address space) in the output machine code file
+  * `-v 0` sets the padding line value to 0 (which initializes empty BRAM to all zeros) in the output machine code file
+  * `-b HEX` sets the number base to hexadecimal in the output machine code file
 3. More about the CR16 assembler used in this project [here](https://github.com/Petersoj/CompactRISC16#assembler).
 
 ## Verilog Source Naming Conventions and Format
@@ -53,4 +57,3 @@ For example, to recursively format Verilog source files in the `src` directory, 
 .formatter/verilog/format src
 ```
 The [`istyle-verilog-formatter`](https://github.com/thomasrussellmurphy/istyle-verilog-formatter) is used as a submodule in the [`.formatter/verilog`](.formatter/verilog) directory. Either clone this repository with `git clone --recurse-submodules` or use `git submodule init; git submodule update` to clone the `istyle-verilog-formatter` repository into the `.formatter/verilog` directory so that the `format` script can run properly. The `format` shell script will run `make` if the `iStyle` binary is not already present in the `istyle-verilog-formatter` directory. Note: you may need to make the script executable via: `chmod 755 .formatter/verilog/format`.
-
