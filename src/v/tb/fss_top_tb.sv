@@ -16,8 +16,9 @@ reg clk = 1'b0;
 
 // Outputs
 wire [6:0] display [3:0];
-wire io_scl;
-wire io_sda;
+// 'tri1' acts as a pull-up resistor for bus lines
+tri1 io_scl;
+tri1 io_sda;
 
 // Establish clock period of 20 nanoseconds (50 MHz)
 always #10 clk = ~clk;

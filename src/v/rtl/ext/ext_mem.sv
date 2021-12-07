@@ -87,10 +87,10 @@ always @(posedge I_CLK) begin
         end
         else begin
             case (I_EXT_MEM_ADDRESS)
-                P_R_ADDRESS_SCL:
-                    O_EXT_MEM_DATA <= O_SCL;
-                P_R_ADDRESS_SDA:
-                    O_EXT_MEM_DATA <= O_SDA;
+                P_R_ADDRESS_SCL:             // Note that 'O_SCL' and 'O_SDA' should neve be high
+                    O_EXT_MEM_DATA <= O_SCL; // impedance as they should always have a pull-up
+                P_R_ADDRESS_SDA:             // configuration (both on the FPGA GPIO lines and in
+                    O_EXT_MEM_DATA <= O_SDA; // simulation using 'tri1')
                 P_R_ADDRESS_MICROSECOND_0:
                     O_EXT_MEM_DATA <= clock_divided_count[15:0]; // 'clock_divided_count' is 48-bit
                 P_R_ADDRESS_MICROSECOND_1:
