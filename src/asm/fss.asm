@@ -3,43 +3,17 @@
 #
 # Create Date: 12/04/2021
 # Name: fss
-# Description: An assembly code file containing the source code for the operation of the
-# FSS Prototype. This code will load onto a De1-SoC FPGA to drive I2C protocol communication
-# with the device hardware. Data is read from various buttons and rotary encoders, and
-# correspoding data is written to a series of SMD LEDs that are driven with LED driver
-# shift registers.
+# Description: This is the main program for the FSS prototype written in our custom assembly code,
+# compiled with our custom assembler, and running our custom CompactRISC16 processor. This code
+# will load onto an FPGA to drive the I2C protocol communication with the device hardware via GPIO
+# pins. Data is read from various buttons and rotary encoders on the FSS, and processed data is
+# written to a series of SMD LEDs that are driven with daisy-chained shift register LED drivers.
 # Authors: Nate Hansen, Jacob Peterson, Brady Hartog, Isabella Gilman
 #
-# Notes:
+
 #
-# I/O Port Expander I2C Addresses:
-#   U10: 0x38
-#   U11: 0x39
+# BEGIN: Program init and main
 #
-# Bit-Encoding for I/O Port Expander U10:
-#   P0      P1      P2     P3     P4      P5      P6      P7
-#   SDI     CLK     LE     Save   Prog1   Prog2   Prog3   Play/Pause
-#
-# Bit-Encoding for I/O Port Expander U11:
-#   P0      P1      P2     P3     P4      P5      P6      P7
-#   SW1A    SW1B    SW2A   SW2B   SW3A    SW3B    unused  unused
-
-
-
-
-#`define ROTARY_ENCODER_1A
-#`define ROTARY_ENCODER_1B
-#`define ROTARY_ENCODER_2A
-#`define ROTARY_ENCODER_2B
-#`define ROTARY_ENCODER_3A
-#`define ROTARY_ENCODER_3B
-#
-#`define U10_BYTE
-#`define U11_BYTE
-
-#`define R_ADDRESS_MICROSECOND_0 2
-#`define R_ADDRESS_MICROSECOND_1 3
-#`define R_ADDRESS_MICROSECOND_2 4
 
 `define STACK_PTR_LOWER 0xFF
 `define STACK_PTR_UPPER 0x03
@@ -54,135 +28,278 @@
     MOVIL   rsp STACK_PTR_LOWER
     MOVIU   rsp STACK_PTR_UPPER
 
-# TODO Remove test
-.test
-    MOVIL   r11 0x38
-    MOVIU   r11 0
-    CALL    .i2c_read_byte
+##
+# The main function.
+#
+# @return void
+##
+.main
+    # TODO
 
-    MOVIL   r11 0x38
-    MOVIU   r11 0
-    MOVIL   r12 0b1000
-    MOVIU   r12 0b1111
+    # Just in case, spin indefinitely in the event that the this line is reached accidentally
+    CALL    .spin_indefinitely
+
+#
+# END: Program init and main
+#
+
+
+
+
+
+
+
+
+#
+# BEGIN: Hardware interfacing functions
+#
+
+# Notes on FSS prototype Main PCB hardware interfacing:
+#
+# I/O Port Expander I2C Addresses:
+#   U10: 0x38
+#   U11: 0x39
+#
+# Port mapping for I/O Port Expander U10 (used for LED driver shift register and push buttons):
+#   P7         P6         P5         P4         P3         P2         P1         P0
+#   Play/Pause Program3   Program2   Program1   Save       LE         CLK        SDI
+#
+# Port mapping for I/O Port Expander U11 (used for reading quadrature-encoded rotary encoders):
+#   P7         P6         P5         P4         P3         P2         P1         P0
+#   N/A        N/A        SW3B       SW3A       SW2B       SW2A       SW1B       SW1A
+#
+# U10 MUST have upper 5 bits driven high always as they are used as inputs for the push buttons.
+# Similarly, U11 MUST have all bits driven high always as they are used as inputs for the rotary
+# encoders. The I2C Port Expander Chip ports will be driven low via the pull-down push buttons
+# and rotary encoder configurations on the Main PCB.
+#
+
+#
+# BEGIN: Hardware I2C address defines
+#
+
+`define U10_I2C_ADDRESS_LOWER 0x38
+`define U10_I2C_ADDRESS_UPPER 0x00
+
+`define U11_I2C_ADDRESS_LOWER 0x39
+`define U11_I2C_ADDRESS_UPPER 0x00
+
+#
+# END: Hardware I2C address defines
+#
+
+##
+# Sets the ring display values and the button indicator values on the FSS prototype.
+#
+# @param r11 - a pointer to an array of length 8 with the following index mapping:
+#              | Index | Description                                       |
+#              | 0     | 1st ring display value (must be 0 - 19, 0 is off) |
+#              | 1     | 2nd ring display value (must be 0 - 19, 0 is off) |
+#              | 2     | 3rd ring display value (must be 0 - 19, 0 is off) |
+#              | 3     | Save indicator value (must be 0 or 1)             |
+#              | 4     | Program1 indicator value (must be 0 or 1)         |
+#              | 5     | Program2 indicator value (must be 0 or 1)         |
+#              | 6     | Program3 indicator value (must be 0 or 1)         |
+#              | 7     | Play/Pause indicator value (must be 0 or 1)       |
+#
+# @return void
+##
+.set_ring_display_and_indicator_values
+    # Index pointer to last value in given array
+    ADDI    r11 7
+
+    #
+    # BEGIN: Write indicator values from array into LED shift register
+    #
+
+    MOVIL   r0  0x00
+    MOVIU   r0  0x00
+
+    # Loop through all LED indicators in array
+    .set_ring_display_and_indicator_values:indicator_loop
+
+    # Push caller-save registers
+    PUSH    r0
+    PUSH    r11
+    # Call '.led_shift_value' with loaded value from array
+    LOAD    r11 r11
+    CALL    .led_shift_value
+    # Pop caller-save registers
+    POP     r11
+    POP     r0
+
+    # Move index pointer to next value
+    SUBI    r11 1
+
+    ADDI    r0  1
+    CMPI    r0  5
+    JLO     .set_ring_display_and_indicator_values:indicator_loop
+
+    #
+    # END: Write indicator values from array into LED shift register
+    #
+
+    #
+    # BEGIN: Write ring display values from array into LED shift register
+    #
+
+    MOVIL   r0  0x00
+    MOVIU   r0  0x00
+
+    # Loop through each LED ring in array
+    .set_ring_display_and_indicator_values:ring_loop
+
+    # Push caller-save registers
+    PUSH    r0
+    PUSH    r11
+
+    MOVIL   r0  19
+    MOVIU   r0  0x00
+
+    # Load the LED ring value
+    LOAD    r1  r11
+
+    # Shift 'r1' number of ones into LED shift register as indicated by the loaded LED ring value,
+    # then shift the remaining number of zeros into LED shift register so that 19 values are
+    # shifted in.
+    .set_ring_display_and_indicator_values:ring_value_loop
+
+    # Push caller-save registers
+    PUSH    r0
+    PUSH    r1
+    # Call '.led_shift_value' with a binary 1 if the loop index ('r0') is less than 'r1', 0 otherwise
+    MOVIL   r11 0x00
+    MOVIU   r11 0x00
+    CMP     r0  r1
+    BHI     1
+    ORI     r11 1
+    CALL    .led_shift_value
+    # Pop caller-save registers
+    POP     r1
+    POP     r0
+
+    SUBI    r0  1
+    CMPI    r0  0
+    JGT     .set_ring_display_and_indicator_values:ring_value_loop
+
+    # Pop caller-save registers
+    POP     r11
+    POP     r0
+
+    # Move index pointer to next value
+    SUBI    r11 1
+
+    ADDI    r0  1
+    CMPI    r0  3
+    JLO     .set_ring_display_and_indicator_values:ring_loop
+
+    #
+    # END: Write ring display values from array into LED shift register
+    #
+
+    # Set latch enable
+    CALL    .led_latch_enable
+
+    RET
+
+##
+# Shifts a binary value into the LED driver shift register.
+#
+# @param r11 - the binary value to shift in (must be either a 0 or a 1)
+#
+# @return void
+##
+.led_shift_value
+    MOV     r0  r11
+
+    MOVIL   r11 U10_I2C_ADDRESS_LOWER
+    MOVIU   r11 U10_I2C_ADDRESS_UPPER
+    # Set LE = 0, CLK = 0, SDI = 'r11' value, keep other ports high
+    MOVIL   r12 0b1111_1000
+    MOVIU   r12 0x00
+    OR      r12 r0       # Sets LSB (SDI) of byte to write to 'r11' binary value
+    # Push caller-save registers
+    PUSH    r0
+    # Write the byte
+    CALL    .i2c_write_byte
+    # Pop caller-save registers
+    POP     r0
+
+    MOVIL   r11 U10_I2C_ADDRESS_LOWER
+    MOVIU   r11 U10_I2C_ADDRESS_UPPER
+    # Set LE = 0, CLK = 1, SDI = 'r11' value, keep other ports high
+    MOVIL   r12 0b1111_1010
+    MOVIU   r12 0x00
+    OR      r12 r0       # Sets LSB (SDI) of byte to write to 'r11' binary value
+    # Write the byte
     CALL    .i2c_write_byte
 
-    MOVIL   r11 0x38
-    MOVIU   r11 0
-    CALL    .i2c_read_byte
+    RET
 
-    MOVIL   r11 0x38
-    MOVIU   r11 0
-    MOVIL   r12 0b1000
-    MOVIU   r12 0b1111
-    CALL    .i2c_write_byte
-
-#    MOVIL   r11 0x38
-#    MOVIU   r11 0
+###
+## Shifts a binary 0 into the LED driver shift register.
+##
+## @return void
+###
+#.led_shift_0
+#    MOVIL   r11 U10_I2C_ADDRESS_LOWER
+#    MOVIU   r11 U10_I2C_ADDRESS_UPPER
+#    # Set SDI = 0, CLK = 0, LE = 0, keep other ports high
+#    MOVIL   r12 0b1000
+#    MOVIU   r12 0b1111
+#    CALL    .i2c_write_byte
+#
+#    MOVIL   r11 U10_I2C_ADDRESS_LOWER
+#    MOVIU   r11 U10_I2C_ADDRESS_UPPER
+#    # Set SDI = 0, CLK = 1, LE = 0, keep other ports high
+#    MOVIL   r12 0b1010
+#    MOVIU   r12 0b1111
+#    CALL    .i2c_write_byte
+#
+#    RET
+#
+###
+## Shifts a binary 1 into the LED driver shift register.
+##
+## @return void
+###
+#.led_shift_1
+#    MOVIL   r11 U10_I2C_ADDRESS_LOWER
+#    MOVIU   r11 U10_I2C_ADDRESS_UPPER
+#    # Set SDI = 1, CLK = 0, LE = 0, keep other ports high
 #    MOVIL   r12 0b1001
 #    MOVIU   r12 0b1111
 #    CALL    .i2c_write_byte
 #
-#    MOVIL   r11 0x38
-#    MOVIU   r11 0
-#    MOVIL   r12 0b1111
+#    MOVIL   r11 U10_I2C_ADDRESS_LOWER
+#    MOVIU   r11 U10_I2C_ADDRESS_UPPER
+#    # Set SDI = 1, CLK = 1, LE = 0, keep other ports high
+#    MOVIL   r12 0b1011
 #    MOVIU   r12 0b1111
 #    CALL    .i2c_write_byte
 #
-#    MOVIL   r11 0x38
-#    MOVIU   r11 0
-#    MOVIL   r12 0b1101
-#    MOVIU   r12 0b1111
-#    CALL    .i2c_write_byte
-
-    CALL    .spin_indefinitely
-
-.main
-  # initialize ring LEDs to
-  # load LED for program 1.
-  CALL .initialize_fss
-
-  #TODO: Implement
-
-  # main loop, infinite.
-
-  # poll input from sensors
-    # if there was a change, set necessary LEDs.
-
-
-##
-# Initializes the state of the FSS to the desired LED display.
-##
-.initialize_fss
-  #TODO: Implement
-  RET
-
-#
-# BEGIN: LED Subroutines
-#
-
-# A quick routine to set the latch enable signal for all LED drivers.
-.set_latch_enable
-  RET
-
-##
-# Sets the LEDs to match a pattern given in the first 4 argument registers.
-# This is done by sending each bit sequentially on the SDI bit through i2c
-# at address 0x38. After each single bit write, we must control the CLK signal
-# for the LED drivers. After all bits have been shifted in, we reset the
-# latch enable signal to allow the new LED pattern to appear. We set latch
-# again before returning to prepare for the next pattern change.
-#
-# @param    r14 - 00 + P/P + P3 + P2 + P1 + PS + ring3[15:9]
-# @param    r13 - ring3[ 8:0] + ring2[19:13]
-# @param    r12 - ring2[12:0] + ring1[19:16]
-# @param    r11 - ring1[15:0]
-#
-# @return   void
-##
-#.set_leds
-#    PUSH    r11
-#    PUSH    r12
-#    PUSH    r13
-#    PUSH    r14
-#
-#    #TODO: Implement
-#
-#    MOVIL   r0  15
-#    MOVIU   r0  0
-#
-#    MOVIL   r11 0x38
-#    CALL    .write_byte_i2c
-#
-#    CALL    .set_latch_enable
 #    RET
 
+##
+# Asserts the LE (Latch Enable) signal on the LED driver.
 #
-# END: LED Subroutines
-#
+# @return void
+##
+.led_latch_enable
+    MOVIL   r11 U10_I2C_ADDRESS_LOWER
+    MOVIU   r11 U10_I2C_ADDRESS_UPPER
+    # Set LE = 1, CLK = 0, SDI = 0, keep other ports high
+    MOVIL   r12 0b1111_1100
+    MOVIU   r12 0x00
+    CALL    .i2c_write_byte
 
-#
-# BEGIN: Subroutines to poll data from controls
-#
-
-##
-# Poll for the state of the buttons on the FSS over i2c.
-##
-.get_button_states
-    #TODO: Implement
-    RET
-
-##
-# Polls for the state of the FSS quadrature-encoded rotary enocoders
-# over i2c.
-#
-##
-.get_rotary_quadrature
-    #TODO: Implement
     RET
 
 #
-# END: Subroutines to poll data from controls
+# END: Hardware interfacing functions
 #
+
+
 
 
 
@@ -293,8 +410,8 @@
 
     # Push caller-saved registers
     PUSH    r10
-    # Send acknowledgement to slave
-    CALL    .i2c_do_ack
+    # Send not-acknowledgement to slave so that it will no longer transmit its data
+    CALL    .i2c_do_nack
     # Pop caller-saved registers
     POP     r10
 
@@ -380,21 +497,21 @@
     CALL    .i2c_set_scl_1
     CALL    .i2c_set_sda_1
 
-    MOVIL   r11 3
+    MOVIL   r11 2
     MOVIU   r11 0
-    CALL    .sleep
+    CALL    .sleep_n_microseconds
 
     CALL    .i2c_set_sda_0
 
-    MOVIL   r11 3
+    MOVIL   r11 2
     MOVIU   r11 0
-    CALL    .sleep
+    CALL    .sleep_n_microseconds
 
     CALL    .i2c_set_scl_0
 
-    MOVIL   r11 1
+    MOVIL   r11 2
     MOVIU   r11 0
-    CALL    .sleep
+    CALL    .sleep_n_microseconds
 
     RET
 
@@ -407,21 +524,21 @@
     CALL    .i2c_set_scl_0
     CALL    .i2c_set_sda_0
 
-    MOVIL   r11 3
+    MOVIL   r11 2
     MOVIU   r11 0
-    CALL    .sleep
+    CALL    .sleep_n_microseconds
 
     CALL    .i2c_set_scl_1
 
-    MOVIL   r11 3
+    MOVIL   r11 2
     MOVIU   r11 0
-    CALL    .sleep
+    CALL    .sleep_n_microseconds
 
     CALL    .i2c_set_sda_1
 
-    MOVIL   r11 1
+    MOVIL   r11 2
     MOVIU   r11 0
-    CALL    .sleep
+    CALL    .sleep_n_microseconds
 
     RET
 
@@ -449,13 +566,13 @@
     PUSH    r0
     PUSH    r10
     # Sleep a few microseconds, then set I2C SCL high, then sleep another few microseconds
-    MOVIL   r11 1
+    MOVIL   r11 2
     MOVIU   r11 0
-    CALL    .sleep
+    CALL    .sleep_n_microseconds
     CALL    .i2c_set_scl_1
-    MOVIL   r11 1
+    MOVIL   r11 2
     MOVIU   r11 0
-    CALL    .sleep
+    CALL    .sleep_n_microseconds
     # Pop caller-saved registers
     POP     r10
 
@@ -515,13 +632,13 @@
     # Push caller-saved registers
     PUSH    r11
     # Sleep a few microseconds, set I2C SCL high, sleep a few microseconds, then set it low
-    MOVIL   r11 1
+    MOVIL   r11 2
     MOVIU   r11 0
-    CALL    .sleep
+    CALL    .sleep_n_microseconds
     CALL    .i2c_set_scl_1
-    MOVIL   r11 1
+    MOVIL   r11 2
     MOVIU   r11 0
-    CALL    .sleep
+    CALL    .sleep_n_microseconds
     CALL    .i2c_set_scl_0
     # Pop caller-saved registers
     POP     r11
@@ -546,15 +663,15 @@
     CALL    .i2c_set_scl_0
     CALL    .i2c_set_sda_1
 
-    MOVIL   r11 1
+    MOVIL   r11 2
     MOVIU   r11 0
-    CALL    .sleep
+    CALL    .sleep_n_microseconds
 
     CALL    .i2c_set_scl_1
 
-    MOVIL   r11 1
+    MOVIL   r11 2
     MOVIU   r11 0
-    CALL    .sleep
+    CALL    .sleep_n_microseconds
 
     CALL    .i2c_get_sda
 
@@ -570,9 +687,9 @@
     # Push caller-saved registers
     PUSH    r10
     # Set SCL back low
-    MOVIL   r11 1
+    MOVIL   r11 3
     MOVIU   r11 0
-    CALL    .sleep
+    CALL    .sleep_n_microseconds
     CALL    .i2c_set_scl_0
     # Pop caller-saved registers
     POP     r10
@@ -580,29 +697,25 @@
     RET
 
 ##
-# Pulls the SDA and SCL lines lows, waits a few microseconds, pulls the SDA line
-# low, pulses the SCL line.
+# Sends the NACK bit by: Pulls SCL low, sets SDA high, pulses the SCL line.
+#
+# @return void
 ##
-.i2c_do_ack
-    CALL    .i2c_set_scl_0
-    CALL    .i2c_set_sda_0
-
-    MOVIL   r11 1
-    MOVIU   r11 0
-    CALL    .sleep
-
-    CALL    .i2c_set_scl_1
-
-    MOVIL   r11 1
-    MOVIU   r11 0
-    CALL    .sleep
-
+.i2c_do_nack
     CALL    .i2c_set_scl_0
     CALL    .i2c_set_sda_1
 
-    MOVIL   r11 1
+    MOVIL   r11 2
     MOVIU   r11 0
-    CALL    .sleep
+    CALL    .sleep_n_microseconds
+
+    CALL    .i2c_set_scl_1
+
+    MOVIL   r11 2
+    MOVIU   r11 0
+    CALL    .sleep_n_microseconds
+
+    CALL    .i2c_set_scl_0
 
     RET
 
@@ -723,6 +836,8 @@
 
 
 
+
+
 #
 # BEGIN: Utility functions
 #
@@ -784,6 +899,46 @@
     RET
 
 ##
+# This function will call '.sleep_exactly_1040_nanoseconds' 'r11' number of times. Note that
+# the '.sleep_48bit' function should be called instead of this one for a large number of
+# microseconds OR when the processor frequency isn't exactly 50 MHz.
+#
+# @param r11 - the number of microseconds to sleep for
+#
+# @return void
+##
+.sleep_n_microseconds
+    # Use 'r1' and don't push on the stack since that takes time and the
+    # '.sleep_exactly_1040_nanoseconds' function doesn't modify it 'r1'
+    MOVIL   r1  0
+    MOVIU   r1  0
+
+    .sleep_n_microseconds:loop
+    CALL    .sleep_exactly_1040_nanoseconds
+    ADDI    r1  1
+    CMP     r1  r11
+    JLO     .sleep_n_microseconds:loop
+
+    RET
+
+##
+# This function sleeps for exactly 1,040 nanoseconds (approximately 1 microsecond) when the
+# processor frequency is 50 MHz. It simply consists of a busy-wait loop.
+#
+# @return void
+##
+.sleep_exactly_1040_nanoseconds
+    MOVIL   r0  0
+    MOVIU   r0  0
+
+    .sleep_exactly_1040_nanoseconds:loop
+    ADDI    r0  1
+    CMPI    r0  0x05
+    JLS     .sleep_exactly_1040_nanoseconds:loop
+
+    RET
+
+##
 # Calls '.sleep_48bit' with only the lower 16-bits set.
 #
 # @param r11 - number of microseconds to sleep for
@@ -801,7 +956,7 @@
 
 ##
 # Sleeps for the given 48-bit microseconds number. Note that the minimum time to execute this
-# function is around 2 microseconds.
+# function is a few microseconds.
 #
 # @param r11 - bits [15:0] of the (unsigned) number of microseconds to sleep for
 # @param r12 - bits [31:16] of the (unsigned) number of microseconds to sleep for
