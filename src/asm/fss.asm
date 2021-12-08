@@ -12,7 +12,7 @@
 #
 
 #
-# BEGIN: Program init and main
+# BEGIN: Program init and main functions
 #
 
 `define STACK_PTR_LOWER 0xFF
@@ -34,13 +34,248 @@
 # @return void
 ##
 .main
-    # TODO
+    CALL    .animation_sequence_startup
+
+    # TODO implement
+
+    .test
+    CALL    .button_get_values
+    MOV     r11 r10
+    CALL    .button_is_save_pressed
+    CMPI    r10 1
+    BNE     1
+    CALL    .idle_animation_sequence
+    JUC     .test
+
 
     # Just in case, spin indefinitely in the event that the this line is reached accidentally
     CALL    .spin_indefinitely
 
+##
+# Executes the startup animation sequence.
 #
-# END: Program init and main
+# @return void
+##
+.animation_sequence_startup
+
+    # The startup animation sequence uses a compressed frame structure stored near the end of
+    # this assembly code file in a static place in memory. The compressed frame structure is
+    # mapped as follows:
+    #
+    #                    | Bit Range | Mapping                |
+    #                    | [4:0]     | 1st ring display value |
+    #                    | [9:5]     | 2nd ring display value |
+    #                    | [14:10]   | 3rd ring display value |
+    #
+    # Note that LED indicators (for push buttons) are not a part of the frame structure and
+    # are programmed in the below "frame loop".
+    #
+    # The following 'r1' register assignment sets number of frames in the animation sequence.
+    #
+
+    MOVIL   r1  87
+    MOVIU   r1  0x00
+
+    # 'r0' is the current frame address of the animation sequency
+    MOV     r0  .startup_animation_sequence_frames
+
+    # 'r1' will now contain the stop address of the animation sequence frames
+    ADD     r1  r0
+
+    .startup_animation_sequence:frame_loop
+
+    # Push caller-saved registers
+    PUSH    r0
+    PUSH    r1
+
+    # Set LED indicator button lights to always be on
+    MOVIL   r1  0x01
+    MOVIU   r1  0x00
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+
+    # Load the compressed frame data
+    LOAD    r0  r0
+
+    # Decode 3rd ring display value and push onto stack
+    MOV     r1  r0
+    RSHI    r1  10
+    ANDI    r1  0b11111
+    PUSH    r1
+
+    # Decode 2nd ring display value and push onto stack
+    MOV     r1  r0
+    RSHI    r1  5
+    ANDI    r1  0b11111
+    PUSH    r1
+
+    # Decode 1st ring display value and push onto stack
+    MOV     r1  r0
+    ANDI    r1  0b11111
+    PUSH    r1
+
+    MOV     r11 rsp
+    ADDI    r11 1
+    CALL    .set_ring_display_and_indicator_values
+
+    # Pop all display values off the stack
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+
+    # Delay 2 milliseconds for next frame
+    MOVIL   r11 0xD0
+    MOVIU   r11 0x07
+    MOVIL   r12 0x00
+    MOVIU   r12 0x00
+    MOVIL   r13 0x00
+    MOVIU   r13 0x00
+    CALL    .sleep_48bit
+
+    # Pop caller-saved registers
+    POP     r1
+    POP     r0
+
+    ADDI    r0  1
+    CMP     r0  r1
+    JLO     .startup_animation_sequence:frame_loop
+
+    # Finally, set all indicator values to 0 and all ring display values to 9
+    MOVIL   r1  0x00
+    MOVIU   r1  0x00
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+    MOVIL   r0  9
+    MOVIU   r0  0x00
+    PUSH    r0
+    PUSH    r0
+    PUSH    r0
+
+    MOV     r11 rsp
+    ADDI    r11 1
+    CALL    .set_ring_display_and_indicator_values
+
+    # Pop all display values off the stack
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+
+    RET
+
+##
+# Executes a few frames of the idle animation sequence.
+#
+# @return void
+##
+.idle_animation_sequence
+    # Set all indicator values to 0 and all ring display values to 0
+    MOVIL   r1  0x00
+    MOVIU   r1  0x00
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+
+    MOV     r11 rsp
+    ADDI    r11 1
+    CALL    .set_ring_display_and_indicator_values
+
+    # Pop all display values off the stack
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+
+    # Shift in a few 1s into the LED driver shift register
+
+    MOVIL   r0  0x00
+    MOVIU   r0  0x00
+
+    .idle_animation_sequence:shift_1s
+
+    # Push caller-saved registers
+    PUSH    r0
+
+    MOVIL   r11 0x01
+    MOVIU   r11 0x00
+    CALL    .led_shift_value
+    CALL    .led_latch_enable
+
+    # Delay 50 milliseconds for next frame
+    MOVIL   r11 0x50
+    MOVIU   r11 0xC3
+    MOVIL   r12 0x00
+    MOVIU   r12 0x00
+    MOVIL   r13 0x00
+    MOVIU   r13 0x00
+    CALL    .sleep_48bit
+
+    # Pop caller-saved registers
+    POP     r0
+
+    ADDI    r0  1
+    CMPI    r0  5
+    JLO     .idle_animation_sequence:shift_1s
+
+    # Shift in a few 0s into the LED driver shift register
+
+    MOVIL   r0  0x00
+    MOVIU   r0  0x00
+
+    .idle_animation_sequence:shift_0s
+
+    # Push caller-saved registers
+    PUSH    r0
+
+    MOVIL   r11 0x00
+    MOVIU   r11 0x00
+    CALL    .led_shift_value
+    CALL    .led_latch_enable
+
+    # Delay 50 milliseconds for next frame
+    MOVIL   r11 0x50
+    MOVIU   r11 0xC3
+    MOVIL   r12 0x00
+    MOVIU   r12 0x00
+    MOVIL   r13 0x00
+    MOVIU   r13 0x00
+    CALL    .sleep_48bit
+
+    # Pop caller-saved registers
+    POP     r0
+
+    ADDI    r0  1
+    CMPI    r0  3
+    JLO     .idle_animation_sequence:shift_0s
+
+    RET
+
+#
+# END: Program init and main functions
 #
 
 
@@ -53,6 +288,9 @@
 #
 # BEGIN: Hardware interfacing functions
 #
+
+# TODO: The functions in this section do not account for when reading or writing to the I2C
+#       chips return an error. Implement a fallback to handle errors later if there is time.
 
 # Notes on FSS prototype Main PCB hardware interfacing:
 #
@@ -88,6 +326,10 @@
 # END: Hardware I2C address defines
 #
 
+#
+# BEGIN: LED driver interfacing functions
+#
+
 ##
 # Sets the ring display values and the button indicator values on the FSS prototype.
 #
@@ -118,13 +360,13 @@
     # Loop through all LED indicators in array
     .set_ring_display_and_indicator_values:indicator_loop
 
-    # Push caller-save registers
+    # Push caller-saved registers
     PUSH    r0
     PUSH    r11
     # Call '.led_shift_value' with loaded value from array
     LOAD    r11 r11
     CALL    .led_shift_value
-    # Pop caller-save registers
+    # Pop caller-saved registers
     POP     r11
     POP     r0
 
@@ -149,7 +391,7 @@
     # Loop through each LED ring in array
     .set_ring_display_and_indicator_values:ring_loop
 
-    # Push caller-save registers
+    # Push caller-saved registers
     PUSH    r0
     PUSH    r11
 
@@ -164,7 +406,7 @@
     # shifted in.
     .set_ring_display_and_indicator_values:ring_value_loop
 
-    # Push caller-save registers
+    # Push caller-saved registers
     PUSH    r0
     PUSH    r1
     # Call '.led_shift_value' with a binary 1 if the loop index ('r0') is less than 'r1', 0 otherwise
@@ -174,7 +416,7 @@
     BHI     1
     ORI     r11 1
     CALL    .led_shift_value
-    # Pop caller-save registers
+    # Pop caller-saved registers
     POP     r1
     POP     r0
 
@@ -182,7 +424,7 @@
     CMPI    r0  0
     JGT     .set_ring_display_and_indicator_values:ring_value_loop
 
-    # Pop caller-save registers
+    # Pop caller-saved registers
     POP     r11
     POP     r0
 
@@ -218,11 +460,11 @@
     MOVIL   r12 0b1111_1000
     MOVIU   r12 0x00
     OR      r12 r0       # Sets LSB (SDI) of byte to write to 'r11' binary value
-    # Push caller-save registers
+    # Push caller-saved registers
     PUSH    r0
     # Write the byte
     CALL    .i2c_write_byte
-    # Pop caller-save registers
+    # Pop caller-saved registers
     POP     r0
 
     MOVIL   r11 U10_I2C_ADDRESS_LOWER
@@ -235,50 +477,6 @@
     CALL    .i2c_write_byte
 
     RET
-
-###
-## Shifts a binary 0 into the LED driver shift register.
-##
-## @return void
-###
-#.led_shift_0
-#    MOVIL   r11 U10_I2C_ADDRESS_LOWER
-#    MOVIU   r11 U10_I2C_ADDRESS_UPPER
-#    # Set SDI = 0, CLK = 0, LE = 0, keep other ports high
-#    MOVIL   r12 0b1000
-#    MOVIU   r12 0b1111
-#    CALL    .i2c_write_byte
-#
-#    MOVIL   r11 U10_I2C_ADDRESS_LOWER
-#    MOVIU   r11 U10_I2C_ADDRESS_UPPER
-#    # Set SDI = 0, CLK = 1, LE = 0, keep other ports high
-#    MOVIL   r12 0b1010
-#    MOVIU   r12 0b1111
-#    CALL    .i2c_write_byte
-#
-#    RET
-#
-###
-## Shifts a binary 1 into the LED driver shift register.
-##
-## @return void
-###
-#.led_shift_1
-#    MOVIL   r11 U10_I2C_ADDRESS_LOWER
-#    MOVIU   r11 U10_I2C_ADDRESS_UPPER
-#    # Set SDI = 1, CLK = 0, LE = 0, keep other ports high
-#    MOVIL   r12 0b1001
-#    MOVIU   r12 0b1111
-#    CALL    .i2c_write_byte
-#
-#    MOVIL   r11 U10_I2C_ADDRESS_LOWER
-#    MOVIU   r11 U10_I2C_ADDRESS_UPPER
-#    # Set SDI = 1, CLK = 1, LE = 0, keep other ports high
-#    MOVIL   r12 0b1011
-#    MOVIU   r12 0b1111
-#    CALL    .i2c_write_byte
-#
-#    RET
 
 ##
 # Asserts the LE (Latch Enable) signal on the LED driver.
@@ -294,6 +492,151 @@
     CALL    .i2c_write_byte
 
     RET
+
+#
+# END: LED driver interfacing functions
+#
+
+#
+# BEGIN: Push button interfacing functions
+#
+
+##
+# Gets whether or not the "Save" button is pressed.
+#
+# @param r11 - the return value of '.button_get_values'
+#
+# @return r10 - 1 if the button is pressed, 0 if not
+##
+.button_is_save_pressed
+    ANDI    r11 0x01
+    MOV     r10 r11
+
+    RET
+
+##
+# Gets whether or not the "Program1" button is pressed.
+#
+# @param r11 - the return value of '.button_get_values'
+#
+# @return r10 - 1 if the button is pressed, 0 if not
+##
+.button_is_program1_pressed
+    RSHI    r11 1
+    ANDI    r11 0x01
+
+    MOV     r10 r11
+
+    RET
+
+##
+# Gets whether or not the "Program2" button is pressed.
+#
+# @param r11 - the return value of '.button_get_values'
+#
+# @return r10 - 1 if the button is pressed, 0 if not
+##
+.button_is_program2_pressed
+    RSHI    r11 2
+    ANDI    r11 0x01
+
+    MOV     r10 r11
+
+    RET
+
+##
+# Gets whether or not the "Program3" button is pressed.
+#
+# @param r11 - the return value of '.button_get_values'
+#
+# @return r10 - 1 if the button is pressed, 0 if not
+##
+.button_is_program3_pressed
+    RSHI    r11 3
+    ANDI    r11 0x01
+
+    MOV     r10 r11
+
+    RET
+
+##
+# Gets whether or not the "Play/Pause" button is pressed.
+#
+# @param r11 - the return value of '.button_get_values'
+#
+# @return r10 - 1 if the button is pressed, 0 if not
+##
+.button_is_playpause_pressed
+    RSHI    r11 4
+    ANDI    r11 0x01
+
+    MOV     r10 r11
+
+    RET
+
+##
+# Gets the binary values of the push buttons by reading the input values of the push button ports
+# on the I/O Port Expander U10.
+#
+# @return r10 - an active-high one-hot encoded value of the push buttons with the following mapping:
+#               | Bit Index | Button Mapping |
+#               | 0         | Save           |
+#               | 1         | Program1       |
+#               | 2         | Program2       |
+#               | 3         | Program3       |
+#               | 4         | Play/Pause     |
+##
+.button_get_values
+    MOVIL   r11 U10_I2C_ADDRESS_LOWER
+    MOVIU   r11 U10_I2C_ADDRESS_UPPER
+    CALL    .i2c_read_byte
+
+    # Shift right 3 times to acquire bits of push buttons values
+    RSHI    r11 3
+
+    # Invert return value of '.i2c_read_byte' since push buttons on Main PCB have a pull-up
+    # (active low) configuration
+    NOT     r11 r11
+
+    # Zero out everything except 5 LSBs
+    ANDI    r11 0b0001_1111
+
+    MOV     r10 r11
+
+    RET
+
+#
+# END: Push button interfacing functions
+#
+
+#
+# BEGIN: Rotary encoder interfacing functions
+#
+
+##
+# Decodes a quadrature-encoded rotary encoder signal (channel A and channel B).
+#
+# @param r11 - a pointer to an array of length 2 containing the previously-saved encoder channel
+#              values with the following mapping:
+#                                                 | Index | Mapping                |
+#                                                 | 0     | Channel A binary value |
+#                                                 | 1     | Channel B binary value |
+#              Note that the passed in new encoder channel (A and B) values will be written to
+#              this array.
+# @param r12 - the new encoder channel A value
+# @param r13 - the new encoder channel B value
+#
+# @return r10 - +1 a clockwise rotation was decoded, -1 if a counter-clockwise rotation was
+#               decoded, 0 if there was no change or decoding was indeterminate
+##
+.rotary_encoder_decode
+    # TODO
+
+    RET
+
+#
+# END: Rotary encoder interfacing functions
+#
 
 #
 # END: Hardware interfacing functions
@@ -680,9 +1023,7 @@
     NOT     r10 r10
 
     # Only concered with LSB of return value so zero out everything else
-    MOVIL   r0  0x01
-    MOVIU   r0  0x00
-    AND     r10 r0
+    ANDI    r10 0x01
 
     # Push caller-saved registers
     PUSH    r10
@@ -855,9 +1196,7 @@
     MOVIU   r10 0
 
     # Apply bit mask for only operating on lower 8 bits of 'r11'
-    MOVIL    r0    0xFF
-    MOVIU    r0    0x00
-    AND      r11   r0
+    ANDI    r11 0xFF
 
     # https://stackoverflow.com/a/2603254/4352701
     .reverse_byte:lut
@@ -1151,5 +1490,118 @@
 
 #
 # END: Utility functions
+#
+
+
+
+
+
+
+
+
+#
+# BEGIN: Startup animation sequence frames
+#
+
+.startup_animation_sequence_frames
+# Start 1st ring display value gradual increment
+0b0_00000_00000_00000
+0b0_00000_00000_00001
+0b0_00000_00000_00010
+0b0_00000_00000_00011
+0b0_00000_00000_00100
+0b0_00000_00000_00101
+0b0_00000_00000_00110
+0b0_00000_00000_00111
+0b0_00000_00000_01000
+0b0_00000_00000_01001
+0b0_00000_00000_01010
+0b0_00000_00000_01011
+0b0_00000_00000_01100
+0b0_00000_00000_01101
+0b0_00000_00000_01110
+0b0_00000_00000_01111
+0b0_00000_00000_10000
+0b0_00000_00000_10001
+0b0_00000_00000_10010
+0b0_00000_00000_10011
+
+# Start 2nd ring display value gradual increment
+0b0_00000_00001_10011
+0b0_00000_00010_10011
+0b0_00000_00011_10011
+0b0_00000_00100_10011
+0b0_00000_00101_10011
+0b0_00000_00110_10011
+0b0_00000_00111_10011
+0b0_00000_01000_10011
+0b0_00000_01001_10011
+0b0_00000_01010_10011
+0b0_00000_01011_10011
+0b0_00000_01100_10011
+0b0_00000_01101_10011
+0b0_00000_01110_10011
+0b0_00000_01111_10011
+0b0_00000_10000_10011
+0b0_00000_10001_10011
+0b0_00000_10010_10011
+0b0_00000_10011_10011
+
+# Start 3rd ring display value gradual increment
+0b0_00001_10011_10011
+0b0_00010_10011_10011
+0b0_00011_10011_10011
+0b0_00100_10011_10011
+0b0_00101_10011_10011
+0b0_00110_10011_10011
+0b0_00111_10011_10011
+0b0_01000_10011_10011
+0b0_01001_10011_10011
+0b0_01010_10011_10011
+0b0_01011_10011_10011
+0b0_01100_10011_10011
+0b0_01101_10011_10011
+0b0_01110_10011_10011
+0b0_01111_10011_10011
+0b0_10000_10011_10011
+0b0_10001_10011_10011
+0b0_10010_10011_10011
+0b0_10011_10011_10011
+
+# Start gradual decrement of all ring display values
+0b0_10011_10011_10011
+0b0_10010_10010_10010
+0b0_10001_10001_10001
+0b0_10000_10000_10000
+0b0_01111_01111_01111
+0b0_01110_01110_01110
+0b0_01101_01101_01101
+0b0_01100_01100_01100
+0b0_01011_01011_01011
+0b0_01010_01010_01010
+0b0_01001_01001_01001
+0b0_01000_01000_01000
+0b0_00111_00111_00111
+0b0_00110_00110_00110
+0b0_00101_00101_00101
+0b0_00100_00100_00100
+0b0_00011_00011_00011
+0b0_00010_00010_00010
+0b0_00001_00001_00001
+0b0_00000_00000_00000
+
+# Start gradual increment of all ring display values to half-way point
+0b0_00001_00001_00001
+0b0_00010_00010_00010
+0b0_00011_00011_00011
+0b0_00100_00100_00100
+0b0_00101_00101_00101
+0b0_00110_00110_00110
+0b0_00111_00111_00111
+0b0_01000_01000_01000
+0b0_01001_01001_01001
+
+#
+# END: Startup animation sequence frames
 #
 
