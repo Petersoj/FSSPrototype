@@ -12,11 +12,11 @@
 #
 
 #
-# BEGIN: Program init and main functions
+# BEGIN: Program init and main function
 #
 
 `define STACK_PTR_LOWER 0xFF
-`define STACK_PTR_UPPER 0x03
+`define STACK_PTR_UPPER 0x0F
 
 ##
 # The program initialization routine.
@@ -35,83 +35,556 @@
 ##
 .main
     CALL    .animation_sequence_startup
+    JUC     .run
 
-    # TODO implement
-
-#    .test
-#    CALL    .button_get_values
-#    MOV     r11 r10
-#    CALL    .button_is_save_pressed
-#    CMPI    r10 1
-#    BNE     1
-#    CALL    .idle_animation_sequence_3
-#    JUC     .test
-
-    .encoder
-    0x0000
-
-    .test
-    CALL    .rotary_encoder_get_values
-
-    MOV     r11 .encoder
-    MOV     r12 r10
-    ANDI    r12 0b0000_0011
-    CALL    .rotary_encoder_decode
-
-    CMPI    r10 1
-    JNE     .test_o
-    MOVIL   r11 1
-    MOVIU   r11 0
-    CALL    .led_shift_value
-    CALL    .led_latch_enable
-    JUC     .test
-    .test_o
-    CMPI    r10 -1
-    JNE     .test_oo
-    MOVIL   r11 0
-    MOVIU   r11 0
-    CALL    .led_shift_value
-    CALL    .led_latch_enable
-    .test_oo
-
-    JUC     .test
+#
+# END: Program init and main function
+#
 
 
-    # Just in case, spin indefinitely in the event that the this line is reached accidentally
-    CALL    .spin_indefinitely
+
+
+
+
+
+
+#
+# BEGIN: Program run functions
+#
+
+#
+# BEGIN: Static memory definitions
+#
+
+# The following is an array of length 8 with the following index mapping:
+# | Index | Description                                       |
+# | 0     | 1st ring display value (must be 0 - 19, 0 is off) |
+# | 1     | 2nd ring display value (must be 0 - 19, 0 is off) |
+# | 2     | 3rd ring display value (must be 0 - 19, 0 is off) |
+# | 3     | Save indicator value (must be 0 or 1)             |
+# | 4     | Program1 indicator value (must be 0 or 1)         |
+# | 5     | Program2 indicator value (must be 0 or 1)         |
+# | 6     | Program3 indicator value (must be 0 or 1)         |
+# | 7     | Play/Pause indicator value (must be 0 or 1)       |
+.display_values_active
+0
+0
+0
+0
+0
+0
+0
+0
+
+# The following are arrays of length 3 with the following index mapping:
+# | Index | Description                                       |
+# | 0     | 1st ring display value (must be 0 - 19, 0 is off) |
+# | 1     | 2nd ring display value (must be 0 - 19, 0 is off) |
+# | 2     | 3rd ring display value (must be 0 - 19, 0 is off) |
+.display_values_program_1
+9
+9
+9
+.display_values_program_2
+2
+17
+8
+.display_values_program_3
+11
+15
+19
+
+# Define a memory location for the current "Play/Pause" button sequence index
+.button_playpause_pressed_sequence_index
+0x0001
+
+# Define a memory location for the '.rotary_encoder_decode' function for the rotary encoders
+.rotary_encoder_1
+0x0000
+.rotary_encoder_2
+0x0000
+.rotary_encoder_3
+0x0000
+
+#
+# END: Static memory definitions
+#
 
 ##
-# Executes the startup animation sequence.
+# Runs the FSS prototype program. This function runs indefinitely.
 #
 # @return void
 ##
-.animation_sequence_startup
+.run
+    # Copy program 1 display values into active values
+    MOV     r11 .display_values_program_1
+    MOV     r12 .display_values_active
+    MOVIL   r13 3
+    MOVIU   r13 0x00
+    CALL    .array_copy
 
-    # The startup animation sequence uses a compressed frame structure stored near the end of
-    # this assembly code file in a static place in memory. The compressed frame structure is
-    # mapped as follows:
-    #
-    #                    | Bit Range | Mapping                |
-    #                    | [4:0]     | 1st ring display value |
-    #                    | [9:5]     | 2nd ring display value |
-    #                    | [14:10]   | 3rd ring display value |
-    #
-    # Note that LED indicators (for push buttons) are not a part of the frame structure and
-    # are programmed in the below "frame loop".
-    #
-    # The following 'r1' register assignment sets number of frames in the animation sequence.
-    #
+    # Indicate program 1 is active
+    MOVIL   r11 0b0000_0010
+    MOVIU   r11 0x00
+    CALL    .set_display_values_active_indicators
 
-    MOVIL   r1  87
+    # Display active values
+    MOV     r11 .display_values_active
+    CALL    .set_ring_display_and_indicator_values
+
+    .run:loop
+
+    CALL    .handle_buttons
+    CALL    .handle_rotary_encoders
+
+    JUC     .run:loop
+
+    # Handle button press events
+
+##
+# Polls and processes the buttons on the FSS prototype.
+#
+# @return void
+##
+.handle_buttons
+    CALL    .button_get_values
+
+    PUSH    r10 # Push caller-saved registers
+    # Check if "Save" button is pressed
+    MOV     r11 r10
+    CALL    .button_is_save_pressed
+    CMPI    r10 1
+    BNE     1
+    CALL    .button_save_pressed
+    POP     r10 # Pop caller-saved registers
+
+    PUSH    r10 # Push caller-saved registers
+    # Check if "Program" button is pressed
+    MOV     r11 r10
+    CALL    .button_is_program_pressed
+    CMPI    r10 0
+    BEQ     2
+    MOV     r11 r10
+    CALL    .button_program_pressed
+    POP     r10 # Pop caller-saved registers
+
+    PUSH    r10 # Push caller-saved registers
+    # Check if "Play/Pause" button is pressed
+    MOV     r11 r10
+    CALL    .button_is_playpause_pressed
+    CMPI    r10 1
+    BNE     1
+    CALL    .button_playpause_pressed
+    POP     r10 # Pop caller-saved registers
+
+    RET
+
+##
+# Polls and processes the rotary encoders on the FSS prototype.
+#
+# @return void
+##
+.handle_rotary_encoders
+    CALL    .rotary_encoder_get_values
+
+    # Push caller-saved registers
+    PUSH    r10
+    # Process rotary encoder 1
+    MOV     r11 .rotary_encoder_1
+    MOV     r12 r10
+    ANDI    r12 0b0000_00011
+    MOV     r13 .display_values_active
+    CALL    .process_rotary_encoder
+    # Pop caller-saved registers
+    POP     r10
+
+    # Push caller-saved registers
+    PUSH    r10
+    # Process rotary encoder 2
+    MOV     r11 .rotary_encoder_2
+    MOV     r12 r10
+    RSHI    r12 2
+    ANDI    r12 0b0000_00011
+    MOV     r13 .display_values_active
+    ADDI    r13 1
+    CALL    .process_rotary_encoder
+    # Pop caller-saved registers
+    POP     r10
+
+    # Push caller-saved registers
+    PUSH    r10
+    # Process rotary encoder 3
+    MOV     r11 .rotary_encoder_3
+    MOV     r12 r10
+    RSHI    r12 4
+    ANDI    r12 0b0000_00011
+    MOV     r13 .display_values_active
+    ADDI    r13 2
+    CALL    .process_rotary_encoder
+    # Pop caller-saved registers
+    POP     r10
+
+    RET
+
+##
+# Processes the data polled from a given rotary encoder on the FSS prototype.
+#
+# @param r11 - a pointer to a boolean value in memory containing whether or not this decode
+#              function observed the following pattern: Channel A = 0 && Channel B = 0
+# @param r12 - the current encoder channel binary values with the following mapping:
+#              | Bit Index | Channel Mapping                         |
+#              | 0         | Channel A binary value (must be 0 or 1) |
+#              | 1         | Channel B binary value (must be 0 or 1) |
+# @param r13 - a pointer to the ring display value in the display value array
+#
+# @return void
+##
+.process_rotary_encoder
+    # Push caller-saved registers
+    PUSH    r13
+    # Decode the given rotary encoder input
+    CALL    .rotary_encoder_decode
+    # Pop caller-saved registers
+    POP     r13
+
+    CMPI    r10 1
+    JEQ     .process_rotary_encoder:handle_cw
+    CMPI    r10 -1
+    JEQ     .process_rotary_encoder:handle_ccw
+    # If neither 1 or -1 was returned by 'rotary_encoder_decode', then return
+    RET
+
+    .process_rotary_encoder:handle_cw
+    # Increment if value is not greater than 19
+    LOAD    r1  r13
+    ADDI    r1  1
+    CMPI    r1  19
+    JGT     .process_rotary_encoder:unchanged_ret
+    STORE   r13 r1
+    JUC     .process_rotary_encoder:changed_ret
+
+    .process_rotary_encoder:handle_ccw
+    # Decrement if value is not less than or equal to 0
+    LOAD    r1  r13
+    SUBI    r1  1
+    CMPI    r1  0
+    JLT     .process_rotary_encoder:unchanged_ret
+    STORE   r13 r1
+    JUC     .process_rotary_encoder:changed_ret
+
+    .process_rotary_encoder:changed_ret
+
+    # Turn on the "Save" indicator
+    MOV     r1  .display_values_active
+    ADDI    r1  3
+    MOVIL   r0  1
+    MOVIU   r0  0x00
+    STORE   r1  r0
+
+    # Display active values
+    MOV     r11 .display_values_active
+    CALL    .set_ring_display_and_indicator_values
+
+    RET
+
+    .process_rotary_encoder:unchanged_ret
+
+    RET
+
+##
+# Gets a pointer to the currently selected program display values.
+#
+# @return r10 - a pointer to the currently selected program display values
+##
+.get_pointer_to_current_program_display_values
+    MOV     r1  .display_values_active
+
+    ADDI    r1  4
+    LOAD    r0  r1
+    CMPI    r0  1
+    JNE     .get_pointer_to_current_program_display_values:after_program_1
+    MOV     r10 .display_values_program_1
+    RET
+    .get_pointer_to_current_program_display_values:after_program_1
+    ADDI    r1  1 # Go to next "indicator" address in '.display_values_active'
+    LOAD    r0  r1
+    CMPI    r0  1
+    JNE     .get_pointer_to_current_program_display_values:after_program_2
+    MOV     r10 .display_values_program_2
+    RET
+    .get_pointer_to_current_program_display_values:after_program_2
+    ADDI    r1  1 # Go to next "indicator" address in '.display_values_active'
+    LOAD    r0  r1
+    CMPI    r0  1
+    JNE     .get_pointer_to_current_program_display_values:after_program_3
+    MOV     r10 .display_values_program_3
+    RET
+    .get_pointer_to_current_program_display_values:after_program_3
+
+    # If this line is ever reached, then there is no active program selected, which should never
+    # happen...
+    RET
+
+##
+# Sets the indicator values in the '.display_values_active'.
+#
+# @param r11 - the one-hot encoded indicator display values with the following bit mapping:
+#              | Bit Index | Mapping                                     |
+#              | 0         | Save indicator value (must be 0 or 1)       |
+#              | 1         | Program1 indicator value (must be 0 or 1)   |
+#              | 2         | Program2 indicator value (must be 0 or 1)   |
+#              | 3         | Program3 indicator value (must be 0 or 1)   |
+#              | 4         | Play/Pause indicator value (must be 0 or 1) |
+#
+# @return void
+##
+.set_display_values_active_indicators
+    MOV     r2  .display_values_active
+    ADDI    r2  3
+
+    MOVIL   r0  0x00
+    MOVIU   r0  0x00
+
+    .set_display_values_active_indicators:loop
+
+    MOV     r1  r11
+    RSH     r1  r0
+    ANDI    r1  0x01
+    STORE   r2  r1
+    ADDI    r2  1
+
+    ADDI    r0  1
+    CMPI    r0  5
+    JLO     .set_display_values_active_indicators:loop
+
+    RET
+
+##
+# Handles the "Save" button press.
+#
+# @return void
+##
+.button_save_pressed
+    CALL    .get_pointer_to_current_program_display_values
+    MOV     r2  r10
+
+    # Copy from active values to desired program
+    MOV     r11 .display_values_active
+    MOV     r12 r2
+    MOVIL   r13 3
+    MOVIU   r13 0x00
+    CALL    .array_copy
+
+    # Turn off the "Save" indicator
+    MOV     r1  .display_values_active
+    ADDI    r1  3
+    MOVIL   r0  0
+    MOVIU   r0  0x00
+    STORE   r1  r0
+
+    # Display active values
+    MOV     r11 .display_values_active
+    CALL    .set_ring_display_and_indicator_values
+
+    # Busy-wait while the "Save" button is being pressed
+    .button_save_pressed:busy_wait
+    CALL    .button_get_values
+    MOV     r11 r10
+    CALL    .button_is_save_pressed
+    CMPI    r10 1
+    JEQ     .button_save_pressed:busy_wait
+
+    # Display active values
+    MOV     r11 .display_values_active
+    CALL    .set_ring_display_and_indicator_values
+
+    RET
+
+##
+# Handles the "Program" button press.
+#
+# @param r11 - the program button index (1 - 3)
+#
+# @return void
+##
+.button_program_pressed
+    # Set 'r0' to address of desired program display values
+    CMPI    r11 1
+    JNE     .button_program_pressed:after_program_1
+    MOV     r0  .display_values_program_1
+    .button_program_pressed:after_program_1
+    CMPI    r11 2
+    JNE     .button_program_pressed:after_program_2
+    MOV     r0  .display_values_program_2
+    .button_program_pressed:after_program_2
+    CMPI    r11 3
+    JNE     .button_program_pressed:after_program_3
+    MOV     r0  .display_values_program_3
+    .button_program_pressed:after_program_3
+
+    # Push caller-saved registers
+    PUSH    r11
+
+    # Copy given program display values into active values
+    MOV     r11 r0
+    MOV     r12 .display_values_active
+    MOVIL   r13 3
+    MOVIU   r13 0x00
+    CALL    .array_copy
+
+    # Pop caller-saved registers
+    POP     r0
+
+    # Indicate given program is active
+    MOVIL   r11 0b0000_0001
+    MOVIU   r11 0x00
+    LSH     r11 r0
+    CALL    .set_display_values_active_indicators
+
+    # Display active values
+    MOV     r11 .display_values_active
+    CALL    .set_ring_display_and_indicator_values
+
+    RET
+
+##
+# Handles the "Play/Pause" button press. This function runs until the "Play/Pause" button is toggled off.
+#
+# @return void
+##
+.button_playpause_pressed
+    # Set all indicator values to 0 and all ring display values to 0
+    MOVIL   r1  0x00
     MOVIU   r1  0x00
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+
+    MOV     r11 rsp
+    ADDI    r11 1
+    CALL    .set_ring_display_and_indicator_values
+
+    # Pop all display values off the stack
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+
+    # Busy-wait while the "Play/Pause" button is being pressed
+    .button_playpause_pressed:busy_wait_pressed_before
+    CALL    .button_get_values
+    MOV     r11 r10
+    CALL    .button_is_playpause_pressed
+    CMPI    r10 1
+    JEQ     .button_playpause_pressed:busy_wait_pressed_before
+
+    .button_playpause_pressed:loop
+
+    MOV     r0  .button_playpause_pressed_sequence_index
+    LOAD    r0  r0
+    CMPI    r0  1
+    BNE     1
+    CALL    .animation_sequence_idle_1
+    CMPI    r0  2
+    BNE     1
+    CALL    .animation_sequence_idle_2
+    CMPI    r0  3
+    BNE     1
+    CALL    .animation_sequence_idle_3
+    CMPI    r0  4
+    BNE     1
+    CALL    .animation_sequence_idle_4
+
+    # Check if "Play/Pause" button is pressed to toggle idle animation off
+    CALL    .button_get_values
+    MOV     r11 r10
+    CALL    .button_is_playpause_pressed
+    CMPI    r10 1
+    JNE     .button_playpause_pressed:loop
+
+    # Set '.button_playpause_pressed_sequence_number' to next sequence number
+    MOV     r0  .button_playpause_pressed_sequence_index
+    LOAD    r1  r0
+    ADDI    r1  1
+    STORE   r0  r1
+
+    CMPI    r1  4
+    JLE     .button_playpause_pressed:skip_sequence_reset
+    # Reset animation sequence to '1'
+    MOVIL   r1  1
+    MOVIU   r1  0x00
+    STORE   r0  r1
+    .button_playpause_pressed:skip_sequence_reset
+
+    # Display active values
+    MOV     r11 .display_values_active
+    CALL    .set_ring_display_and_indicator_values
+
+    # Busy-wait while the "Play/Pause" button is being pressed
+    .button_playpause_pressed:busy_wait_pressed_after
+    CALL    .button_get_values
+    MOV     r11 r10
+    CALL    .button_is_playpause_pressed
+    CMPI    r10 1
+    JEQ     .button_playpause_pressed:busy_wait_pressed_after
+
+    RET
+
+#
+# END: Program run functions
+#
+
+
+
+
+
+
+
+
+#
+# BEGIN: Animation sequence functions
+#
+
+##
+# Executes a given animation sequence.
+#
+# An animation sequence uses a compressed frame structure stored in a static place in memory.
+# The compressed frame structure is  mapped as follows:
+#
+#                    | Bit Range | Mapping                |
+#                    | [4:0]     | 1st ring display value |
+#                    | [9:5]     | 2nd ring display value |
+#                    | [14:10]   | 3rd ring display value |
+#
+# Note that LED indicators (for push buttons) are not a part of the frame structure and are
+# programmed in the below "frame loop" (and by default are always on during the animation
+# playback).
+#
+# @return r11 - the number of frames in the animation sequence
+# @return r12 - a pointer to a sequence of frames for the animation
+#
+# @return void
+##
+.execute_animation_sequence
+    # The following 'r1' register assignment sets number of frames in the animation sequence
+    MOV     r1  r11
 
     # 'r0' is the current frame address of the animation sequency
-    MOV     r0  .startup_animation_sequence_frames
+    MOV     r0  r12
 
     # 'r1' will now contain the stop address of the animation sequence frames
     ADD     r1  r0
 
-    .startup_animation_sequence:frame_loop
+    .execute_animation_sequence:frame_loop
 
     # Push caller-saved registers
     PUSH    r0
@@ -175,50 +648,35 @@
 
     ADDI    r0  1
     CMP     r0  r1
-    JLO     .startup_animation_sequence:frame_loop
-
-    # Finally, set all indicator values to 0 and all ring display values to 9
-    MOVIL   r1  0x00
-    MOVIU   r1  0x00
-    PUSH    r1
-    PUSH    r1
-    PUSH    r1
-    PUSH    r1
-    PUSH    r1
-    MOVIL   r0  9
-    MOVIU   r0  0x00
-    PUSH    r0
-    PUSH    r0
-    PUSH    r0
-
-    MOV     r11 rsp
-    ADDI    r11 1
-    CALL    .set_ring_display_and_indicator_values
-
-    # Pop all display values off the stack
-    POP     r0
-    POP     r0
-    POP     r0
-    POP     r0
-    POP     r0
-    POP     r0
-    POP     r0
-    POP     r0
+    JLO     .execute_animation_sequence:frame_loop
 
     RET
 
 ##
-# Executes a few frames of the idle animation sequence 1.
+# Executes the startup animation sequence.
 #
 # @return void
 ##
-.idle_animation_sequence_1
-    # Shift in a few 1s into the LED driver shift register
+.animation_sequence_startup
+    MOVIL   r11 87
+    MOVIU   r11 0x00
+    MOV     r12 .startup_animation_sequence_frames
+    CALL    .execute_animation_sequence
+
+    RET
+
+##
+# Executes the idle animation sequence 1.
+#
+# @return void
+##
+.animation_sequence_idle_1
+    # Shift in several 1s into the LED driver shift register
 
     MOVIL   r0  0x00
     MOVIU   r0  0x00
 
-    .idle_animation_sequence_1:shift_1s
+    .animation_sequence_idle_1:shift_1s
 
     # Push caller-saved registers
     PUSH    r0
@@ -228,10 +686,10 @@
     CALL    .led_shift_value
     CALL    .led_latch_enable
 
-    # Delay 100 milliseconds for next frame
-    MOVIL   r11 0xA0
-    MOVIU   r11 0x86
-    MOVIL   r12 0x01
+    # Delay 35 milliseconds for next frame
+    MOVIL   r11 0xB8
+    MOVIU   r11 0x88
+    MOVIL   r12 0x00
     MOVIU   r12 0x00
     MOVIL   r13 0x00
     MOVIU   r13 0x00
@@ -241,15 +699,15 @@
     POP     r0
 
     ADDI    r0  1
-    CMPI    r0  3
-    JLO     .idle_animation_sequence_1:shift_1s
+    CMPI    r0  5
+    JLO     .animation_sequence_idle_1:shift_1s
 
-    # Shift in a few 0s into the LED driver shift register
+    # Shift in several 0s into the LED driver shift register
 
     MOVIL   r0  0x00
     MOVIU   r0  0x00
 
-    .idle_animation_sequence_1:shift_0s
+    .animation_sequence_idle_1:shift_0s
 
     # Push caller-saved registers
     PUSH    r0
@@ -259,10 +717,10 @@
     CALL    .led_shift_value
     CALL    .led_latch_enable
 
-    # Delay 100 milliseconds for next frame
-    MOVIL   r11 0xA0
-    MOVIU   r11 0x86
-    MOVIL   r12 0x01
+    # Delay 35 milliseconds for next frame
+    MOVIL   r11 0xB8
+    MOVIU   r11 0x88
+    MOVIL   r12 0x00
     MOVIU   r12 0x00
     MOVIL   r13 0x00
     MOVIU   r13 0x00
@@ -272,18 +730,18 @@
     POP     r0
 
     ADDI    r0  1
-    CMPI    r0  3
-    JLO     .idle_animation_sequence_1:shift_0s
+    CMPI    r0  5
+    JLO     .animation_sequence_idle_1:shift_0s
 
     RET
 
 ##
-# Executes a few frames of the idle animation sequence 2.
+# Executes the idle animation sequence 2.
 #
 # @return void
 ##
-.idle_animation_sequence_2
-    # Shift a 1 into the LED driver shift register
+.animation_sequence_idle_2
+    # Shift in and latch a 1 into the LED driver shift register
     MOVIL   r11 0x01
     MOVIU   r11 0x00
     CALL    .led_shift_value
@@ -298,10 +756,7 @@
     MOVIU   r13 0x00
     CALL    .sleep_48bit
 
-    # Shift in two 0s into the LED driver shift register
-    MOVIL   r11 0x00
-    MOVIU   r11 0x00
-    CALL    .led_shift_value
+    # Shift in and latch a 0 into the LED driver shift register
     MOVIL   r11 0x00
     MOVIU   r11 0x00
     CALL    .led_shift_value
@@ -319,12 +774,49 @@
     RET
 
 ##
-# Executes a few frames of the idle animation sequence 3.
+# Executes the idle animation sequence 3.
 #
 # @return void
 ##
-.idle_animation_sequence_3
-    # Set all indicator values to 0 and all ring display values to 0
+.animation_sequence_idle_3
+    # Shift and latch a 1 into the LED driver shift register
+    MOVIL   r11 0x01
+    MOVIU   r11 0x00
+    CALL    .led_shift_value
+    CALL    .led_latch_enable
+
+    # Incrementally shift in and latch 0s into the LED driver shift register
+
+    MOVIL   r0  0x00
+    MOVIU   r0  0x00
+
+    .animation_sequence_idle_3:shift_0s_loop
+
+    # Push caller-saved registers
+    PUSH    r0
+
+    MOVIL   r11 0x00
+    MOVIU   r11 0x00
+    CALL    .led_shift_value
+    CALL    .led_latch_enable
+
+    # Delay 11 milliseconds for next frame
+    MOVIL   r11 0xF8
+    MOVIU   r11 0x2A
+    MOVIL   r12 0x00
+    MOVIU   r12 0x00
+    MOVIL   r13 0x00
+    MOVIU   r13 0x00
+    CALL    .sleep_48bit
+
+    # Pop caller-saved registers
+    POP     r0
+
+    ADDI    r0  1
+    CMPI    r0  56
+    JLO     .animation_sequence_idle_3:shift_0s_loop
+
+    # Finally, set all indicator values to 0 and all ring display values to 0
     MOVIL   r1  0x00
     MOVIU   r1  0x00
     PUSH    r1
@@ -332,11 +824,9 @@
     PUSH    r1
     PUSH    r1
     PUSH    r1
-    MOVIL   r0  0
-    MOVIU   r0  0x00
-    PUSH    r0
-    PUSH    r0
-    PUSH    r0
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
 
     MOV     r11 rsp
     ADDI    r11 1
@@ -352,139 +842,23 @@
     POP     r0
     POP     r0
 
-    # Register r8 will contain the total number of frames in the forward sequence.
-    MOVIU  r8  0x00
-    MOVIL  r8  57
+    RET
 
-    # Register r9 will contain the loop counter
-
-
-    # Shift a 1 into the LED driver shift register
-    MOVIL   r11 0x01
+##
+# Executes the idle animation sequence 4.
+#
+# @return void
+##
+.animation_sequence_idle_4
+    MOVIL   r11 40
     MOVIU   r11 0x00
-    CALL    .led_shift_value
-    CALL    .led_latch_enable
-
-    .idle_animation_sequence_3:forward_loop
-
-    # Push caller-saved values
-    PUSH    r8
-    PUSH    r9
-
-    # Shift a 0 into the LED driver shift register
-    MOVIL   r11 0x00
-    MOVIU   r11 0x00
-    CALL    .led_shift_value
-    CALL    .led_latch_enable
-
-    # Delay 10 milliseconds for next frame
-    MOVIL   r11 0x10
-    MOVIU   r11 0x27
-    MOVIL   r12 0x00
-    MOVIU   r12 0x00
-    MOVIL   r13 0x00
-    MOVIU   r13 0x00
-    CALL    .sleep_48bit
-
-    ADDI    r8  1
-    CMP     r9  r8
-    JLT     .idle_animation_sequence_3:forward_loop
-
-    # Now 'r9' represents the counter for the reverse loop
-    # Set all indicator values to 0 and all ring display values to 0
-
-    .idle_animation_sequence_3:reverse_loop
-    MOVIL   r1  0x00
-    MOVIU   r1  0x00
-
-    PUSH    r8
-    PUSH    r9
-
-    PUSH    r1
-    PUSH    r1
-    PUSH    r1
-    PUSH    r1
-    PUSH    r1
-    MOVIL   r0  0
-    MOVIU   r0  0x00
-    PUSH    r0
-    PUSH    r0
-    PUSH    r0
-
-    MOV     r11 rsp
-    ADDI    r11 1
-    CALL    .set_ring_display_and_indicator_values
-
-    # Pop all display values off the stack
-    POP     r0
-    POP     r0
-    POP     r0
-    POP     r0
-    POP     r0
-    POP     r0
-    POP     r0
-    POP     r0
-
-    # Shift a 1 into the LED driver shift register
-    MOVIL   r11 0x01
-    MOVIU   r11 0x00
-    CALL    .led_shift_value
-    CALL    .led_latch_enable
-
-    POP     r9
-    POP     r8
-
-    # 'r7' represents the inner-loop counter
-
-    .idle_animation_sequence_3:inner_reverse_loop
-    MOVIU  r7  0x00
-    MOVIL  r7  0x00
-
-     # Push caller-saved values
-    PUSH    r7
-    PUSH    r8
-    PUSH    r9
-
-    # Shift a 0 into the LED driver shift register
-    MOVIL   r11 0x00
-    MOVIU   r11 0x00
-    CALL    .led_shift_value
-
-    POP     r9
-    POP     r8
-    POP     r7
-
-    ADDI    r7  1
-    CMP     r7  r9
-    JLT     .idle_animation_sequence_3:inner_reverse_loop
-
-    PUSH    r7
-    PUSH    r8
-    PUSH    r9
-
-    CALL    .led_latch_enable
-
-    # Delay 10 milliseconds for next frame
-    MOVIL   r11 0x10
-    MOVIU   r11 0x27
-    MOVIL   r12 0x00
-    MOVIU   r12 0x00
-    MOVIL   r13 0x00
-    MOVIU   r13 0x00
-    CALL    .sleep_48bit
-
-    POP     r9
-    POP     r8
-    POP     r7
-
-    SUBI    r9  1
-    CMPI    r9  0
-    JGE     .idle_animation_sequence_3:reverse_loop
+    MOV     r12 .animation_sequence_idle_4_frames
+    CALL    .execute_animation_sequence
 
     RET
 
 #
-# END: Program init and main functions
+# END: Animation sequence functions
 #
 
 
@@ -724,48 +1098,48 @@
     RET
 
 ##
-# Gets whether or not the "Program1" button is pressed.
+# Gets whether or not a "Program" button is pressed.
 #
 # @param r11 - the return value of '.button_get_values'
 #
-# @return r10 - 1 if the button is pressed, 0 if not
+# @return r10 - the program button that is pressed (1 - 3) or 0 for no button pressed
 ##
-.button_is_program1_pressed
-    RSHI    r11 1
-    ANDI    r11 0x01
-
-    MOV     r10 r11
-
+.button_is_program_pressed
+    # Check "Program1" button
+    MOV     r0  r11
+    RSHI    r0  1
+    ANDI    r0  0x01
+    CMPI    r0  1
+    JNE     .button_is_program_pressed:after_1
+    MOVIL   r10 1
+    MOVIU   r10 0x00
     RET
+    .button_is_program_pressed:after_1
 
-##
-# Gets whether or not the "Program2" button is pressed.
-#
-# @param r11 - the return value of '.button_get_values'
-#
-# @return r10 - 1 if the button is pressed, 0 if not
-##
-.button_is_program2_pressed
-    RSHI    r11 2
-    ANDI    r11 0x01
-
-    MOV     r10 r11
-
+    # Check "Program2" button
+    MOV     r0  r11
+    RSHI    r0  2
+    ANDI    r0  0x01
+    CMPI    r0  1
+    JNE     .button_is_program_pressed:after_2
+    MOVIL   r10 2
+    MOVIU   r10 0x00
     RET
+    .button_is_program_pressed:after_2
 
-##
-# Gets whether or not the "Program3" button is pressed.
-#
-# @param r11 - the return value of '.button_get_values'
-#
-# @return r10 - 1 if the button is pressed, 0 if not
-##
-.button_is_program3_pressed
-    RSHI    r11 3
-    ANDI    r11 0x01
+    # Check "Program3" button
+    MOV     r0  r11
+    RSHI    r0  3
+    ANDI    r0  0x01
+    CMPI    r0  1
+    JNE     .button_is_program_pressed:after_3
+    MOVIL   r10 3
+    MOVIU   r10 0x00
+    RET
+    .button_is_program_pressed:after_3
 
-    MOV     r10 r11
-
+    MOVIL   r10 0
+    MOVIU   r10 0x00
     RET
 
 ##
@@ -822,8 +1196,8 @@
 #
 
 ##
-# Decodes a quadrature-encoded rotary encoder signal (channel A and channel B). This function
-# follows the following current-state-next-state lookup table:
+# Decodes a quadrature-encoded rotary encoder signal (channel A and channel B). This following
+# current-state-next-state lookup table can be used to decode quadrature encoded signals:
 #  | Previous A | Previous B | Current A  | Current B  | Direction     |
 #  | 0          | 0          | 0          | 0          | N/A           |
 #  | 0          | 0          | 0          | 1          | CCW (posedge) |
@@ -853,6 +1227,12 @@
 #               decoded, 0 if there was no change or decoding was indeterminate
 ##
 .rotary_encoder_decode
+
+# TODO IMPLEMEMNT WITH
+# @param r11 - a pointer to a value in memory that will contain a state counter for debouncing
+#              the encoder signal transitions
+
+
     CMPI    r12 0b0000_00000
     JNE     .rotary_encoder_decode:a_b_not_zeros
 
@@ -997,6 +1377,7 @@
 
     MOV     r10 .get_microseconds:return_array_pointer
     RET
+
     .get_microseconds:return_array_pointer
     0x0000
     0x0000
@@ -1486,6 +1867,26 @@
     # Apply bit mask for only operating on lower 8 bits of 'r11'
     ANDI    r11 0xFF
 
+    MOV     r9  .reverse_byte:lut
+
+    MOV     r1  r11
+    ANDI    r1  0b1111
+    MOV     r0  r9
+    ADD     r0  r1
+    LOAD    r5  r0
+
+    MOV     r1  r11
+    RSHI    r1  4
+    MOV     r0  r9
+    ADD     r0  r1
+    LOAD    r4  r0
+
+    MOV     r10 r5
+    LSHI    r10 4
+    OR      r10 r4
+
+    RET
+
     # https://stackoverflow.com/a/2603254/4352701
     .reverse_byte:lut
     0x0
@@ -1505,23 +1906,30 @@
     0x7
     0xF
 
-    MOV     r9  .reverse_byte:lut
+##
+# Copies the array at 'r11' to 'r12' with length 'r13'.
+#
+# @param r11 - a pointer to the array to copy from
+# @param r12 - a pointer to the array to copy to
+# @param r13 - the length of to copy
+#
+# @return void
+##
+.array_copy
+    MOVIL   r0  0x00
+    MOVIU   r0  0x00
 
-    MOV     r1  r11
-    ANDI    r1  0b1111
-    MOV     r0  r9
-    ADD     r0  r1
-    LOAD    r5  r0
+    .array_copy:loop
 
-    MOV     r1  r11
-    RSHI    r1  4
-    MOV     r0  r9
-    ADD     r0  r1
-    LOAD    r4  r0
+    LOAD    r5  r11
+    STORE   r12  r5
 
-    MOV     r10 r5
-    LSHI    r10 4
-    OR      r10 r4
+    ADDI    r11 1
+    ADDI    r12 1
+
+    ADDI    r0  1
+    CMP     r0  r13
+    JLO     .array_copy:loop
 
     RET
 
@@ -1763,6 +2171,7 @@
 
     MOV     r10 .subtract_48bit:return_array_pointer
     RET
+
     .subtract_48bit:return_array_pointer
     0x0000
     0x0000
@@ -1773,7 +2182,7 @@
 #
 # @return void
 ##
-.spin_indefinitely
+.spin
     BUC     -1
 
 #
@@ -1891,5 +2300,64 @@
 
 #
 # END: Startup animation sequence frames
+#
+
+
+
+
+
+
+
+
+#
+# BEGIN: Idle 4 animation sequence frames
+#
+.animation_sequence_idle_4_frames
+# Start ring display value gradual increment
+0b0_00000_00000_00000
+0b0_00001_00001_00001
+0b0_00010_00010_00010
+0b0_00011_00011_00011
+0b0_00100_00100_00100
+0b0_00101_00101_00101
+0b0_00110_00110_00110
+0b0_00111_00111_00111
+0b0_01000_01000_01000
+0b0_01001_01001_01001
+0b0_01010_01010_01010
+0b0_01011_01011_01011
+0b0_01100_01100_01100
+0b0_01101_01101_01101
+0b0_01110_01110_01110
+0b0_01111_01111_01111
+0b0_10000_10000_10000
+0b0_10001_10001_10001
+0b0_10010_10010_10010
+0b0_10011_10011_10011
+
+# Start ring display value gradual decrement
+0b0_10011_10011_10011
+0b0_10010_10010_10010
+0b0_10001_10001_10001
+0b0_10000_10000_10000
+0b0_01111_01111_01111
+0b0_01110_01110_01110
+0b0_01101_01101_01101
+0b0_01100_01100_01100
+0b0_01011_01011_01011
+0b0_01010_01010_01010
+0b0_01001_01001_01001
+0b0_01000_01000_01000
+0b0_00111_00111_00111
+0b0_00110_00110_00110
+0b0_00101_00101_00101
+0b0_00100_00100_00100
+0b0_00011_00011_00011
+0b0_00010_00010_00010
+0b0_00001_00001_00001
+0b0_00000_00000_00000
+
+#
+# END: Idle 4 animation sequence frames
 #
 
