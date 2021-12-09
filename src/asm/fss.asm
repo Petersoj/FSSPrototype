@@ -38,13 +38,42 @@
 
     # TODO implement
 
+#    .test
+#    CALL    .button_get_values
+#    MOV     r11 r10
+#    CALL    .button_is_save_pressed
+#    CMPI    r10 1
+#    BNE     1
+#    CALL    .idle_animation_sequence_3
+#    JUC     .test
+
+    .encoder
+    0x0000
+
     .test
-    CALL    .button_get_values
-    MOV     r11 r10
-    CALL    .button_is_playpause_pressed
+    CALL    .rotary_encoder_get_values
+
+    MOV     r11 .encoder
+    MOV     r12 r10
+    ANDI    r12 0b0000_0011
+    CALL    .rotary_encoder_decode
+
     CMPI    r10 1
-    BNE     1
-    CALL    .idle_animation_sequence_2
+    JNE     .test_o
+    MOVIL   r11 1
+    MOVIU   r11 0
+    CALL    .led_shift_value
+    CALL    .led_latch_enable
+    JUC     .test
+    .test_o
+    CMPI    r10 -1
+    JNE     .test_oo
+    MOVIL   r11 0
+    MOVIU   r11 0
+    CALL    .led_shift_value
+    CALL    .led_latch_enable
+    .test_oo
+
     JUC     .test
 
 
@@ -295,7 +324,6 @@
 # @return void
 ##
 .idle_animation_sequence_3
- 
     # Set all indicator values to 0 and all ring display values to 0
     MOVIL   r1  0x00
     MOVIU   r1  0x00
@@ -338,7 +366,7 @@
     CALL    .led_latch_enable
 
     .idle_animation_sequence_3:forward_loop
-    
+
     # Push caller-saved values
     PUSH    r8
     PUSH    r9
@@ -362,7 +390,6 @@
     CMP     r9  r8
     JLT     .idle_animation_sequence_3:forward_loop
 
-    
     # Now 'r9' represents the counter for the reverse loop
     # Set all indicator values to 0 and all ring display values to 0
 
@@ -421,7 +448,7 @@
     # Shift a 0 into the LED driver shift register
     MOVIL   r11 0x00
     MOVIU   r11 0x00
-    CALL    .led_shift_value    
+    CALL    .led_shift_value
 
     POP     r9
     POP     r8
@@ -451,7 +478,7 @@
     POP     r7
 
     SUBI    r9  1
-    CMP     r9  0
+    CMPI    r9  0
     JGE     .idle_animation_sequence_3:reverse_loop
 
     RET
@@ -782,6 +809,7 @@
 
     # Zero out everything except 5 LSBs
     ANDI    r10 0b0001_1111
+    MOVIU   r10 0x00
 
     RET
 
@@ -796,92 +824,102 @@
 ##
 # Decodes a quadrature-encoded rotary encoder signal (channel A and channel B). This function
 # follows the following current-state-next-state lookup table:
-#  | Previous A | Previous B | Current A  | Current B  | Direction  |
-#  | 0          | 0          | 0          | 0          | N/A        |
-#  | 0          | 0          | 0          | 1          | CCW        |
-#  | 0          | 0          | 1          | 0          | CW         |
-#  | 0          | 0          | 1          | 1          | N/A        |
-#  | 0          | 1          | 0          | 0          | CW         |
-#  | 0          | 1          | 0          | 1          | N/A        |
-#  | 0          | 1          | 1          | 0          | N/A        |
-#  | 0          | 1          | 1          | 1          | CCW        |
-#  | 1          | 0          | 0          | 0          | CCW        |
-#  | 1          | 0          | 0          | 1          | N/A        |
-#  | 1          | 0          | 1          | 0          | N/A        |
-#  | 1          | 0          | 1          | 1          | CW         |
-#  | 1          | 1          | 0          | 0          | N/A        |
-#  | 1          | 1          | 0          | 1          | CW         |
-#  | 1          | 1          | 1          | 0          | CCW        |
-#  | 1          | 1          | 1          | 1          | N/A        |
+#  | Previous A | Previous B | Current A  | Current B  | Direction     |
+#  | 0          | 0          | 0          | 0          | N/A           |
+#  | 0          | 0          | 0          | 1          | CCW (posedge) |
+#  | 0          | 0          | 1          | 0          | CW  (posedge) |
+#  | 0          | 0          | 1          | 1          | N/A           |
+#  | 0          | 1          | 0          | 0          | CW  (negedge) |
+#  | 0          | 1          | 0          | 1          | N/A           |
+#  | 0          | 1          | 1          | 0          | N/A           |
+#  | 0          | 1          | 1          | 1          | CCW (posedge) |
+#  | 1          | 0          | 0          | 0          | CCW (negedge) |
+#  | 1          | 0          | 0          | 1          | N/A           |
+#  | 1          | 0          | 1          | 0          | N/A           |
+#  | 1          | 0          | 1          | 1          | CW  (posedge) |
+#  | 1          | 1          | 0          | 0          | N/A           |
+#  | 1          | 1          | 0          | 1          | CW  (negedge) |
+#  | 1          | 1          | 1          | 0          | CCW (negedge) |
+#  | 1          | 1          | 1          | 1          | N/A           |
 #
-# @param r11 - a pointer to an array of length 2 containing the previously-saved encoder channel
-#              values with the following mapping:
-#                                                 | Index | Mapping                |
-#                                                 | 0     | Channel A binary value |
-#                                                 | 1     | Channel B binary value |
-#              Note that the passed in new encoder channel (A and B) values will be written to
-#              this array.
-# @param r12 - the new encoder channel A value
-# @param r13 - the new encoder channel B value
+# @param r11 - a pointer to a boolean value in memory containing whether or not this decode
+#              function observed the following pattern: Channel A = 0 && Channel B = 0
+# @param r12 - the current encoder channel binary values with the following mapping:
+#              | Bit Index | Channel Mapping                         |
+#              | 0         | Channel A binary value (must be 0 or 1) |
+#              | 1         | Channel B binary value (must be 0 or 1) |
 #
 # @return r10 - +1 a clockwise rotation was decoded, -1 if a counter-clockwise rotation was
 #               decoded, 0 if there was no change or decoding was indeterminate
 ##
 .rotary_encoder_decode
-    # Load previous encoder channel values
-    LOAD    r2   r11
-    ADDI    r11  1
-    LOAD    r3   r11
+    CMPI    r12 0b0000_00000
+    JNE     .rotary_encoder_decode:a_b_not_zeros
 
-    # Store current encoder channel values into static memory
-    STORE   r11  r13
-    SUBI    r11  1
-    STORE   r11  r12
+    MOVIL   r0  0x01
+    MOVIU   r0  0x00
+    STORE   r11 r0
 
-    # Shift previous channel values into register r2 formatted as 0000 AB00
-    LSHI    r2   3
-    LSHI    r3   2
-    OR      r2   r3
-
-    # Shift current channel values into register r2, formatted finally as 0000 ABAB
-    LSHI    r12  1
-    OR      r12  r13
-    OR      r2   r12
-
-    # Cases to fill the lights clockwise
-    CMPI    r2  0x1101
-    JEQ     .rotary_encoder_decode:ret_cw
-    CMPI    r2  0x1011
-    JEQ     .rotary_encoder_decode:ret_cw
-    CMPI    r2  0x0100
-    JEQ     .rotary_encoder_decode:ret_cw
-    CMPI    r2  0x0010
-    JEQ     .rotary_encoder_decode:ret_cw
-
-    # Cases to fill the lights counter-clockwise
-    CMPI    r2  0x1110
-    JEQ     .rotary_encoder_decode:ret_ccw
-    CMPI    r2  0x1000
-    JEQ     .rotary_encoder_decode:ret_ccw
-    CMPI    r2  0x0111
-    JEQ     .rotary_encoder_decode:ret_ccw
-    CMPI    r2  0x0001
-    JEQ     .rotary_encoder_decode:ret_ccw
-
-    # If no change could be detected, return 0
-    .rotary_encoder_decode:ret_no_change
-    MOVIU   r10 0x00    # Zero extension
     MOVIL   r10 0x00
+    MOVIU   r10 0x00
+    RET
+
+    .rotary_encoder_decode:a_b_not_zeros
+
+    LOAD    r0  r11
+    CMPI    r0  0x01
+    JNE     .rotary_encoder_decode:ret_ignore
+    CMPI    r12 0b0000_0001
+    JEQ     .rotary_encoder_decode:ret_cw
+    CMPI    r12 0b0000_0010
+    JEQ     .rotary_encoder_decode:ret_ccw
+
+    # If no posedge CW or CCW pattern was observed, return 0
+    .rotary_encoder_decode:ret_ignore
+    MOVIL   r10 0
+    MOVIU   r10 0x00    # Zero extension
     RET
 
     .rotary_encoder_decode:ret_cw
-    MOVIU   r10 0x00    # Zero extension
+    MOVIL   r0  0x00
+    MOVIU   r0  0x00
+    STORE   r11 r0
+
     MOVIL   r10 1
+    MOVIU   r10 0x00    # Zero extension
     RET
 
     .rotary_encoder_decode:ret_ccw
-    MOVIU   r10 0xFF    # Sign extension
+    MOVIL   r0  0x00
+    MOVIU   r0  0x00
+    STORE   r11 r0
+
     MOVIL   r10 -1
+    MOVIU   r10 0xFF    # Sign extension
+    RET
+
+##
+# Gets the binary values of the quadrature-encoded rotary encoder signals (channel A and channel B)
+# by reading the input values of the rotary encoder "switch" ports on the I/O Port Expander U11.
+#
+# @return r10 - an encoding of the rotary encoder channels with the following mapping:
+#               | Bit Index | Channel Mapping     |
+#               | 0         | Encoder 1 Channel A |
+#               | 1         | Encoder 1 Channel B |
+#               | 2         | Encoder 2 Channel A |
+#               | 3         | Encoder 2 Channel B |
+#               | 4         | Encoder 3 Channel A |
+#               | 5         | Encoder 3 Channel B |
+##
+.rotary_encoder_get_values
+    MOVIL   r11 U11_I2C_ADDRESS_LOWER
+    MOVIU   r11 U11_I2C_ADDRESS_UPPER
+    CALL    .i2c_read_byte
+
+    # Zero out everything except 6 LSBs
+    ANDI    r10 0b0011_1111
+    MOVIU   r10 0x00
+
     RET
 
 #
