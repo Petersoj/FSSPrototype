@@ -660,8 +660,60 @@
 #               decoded, 0 if there was no change or decoding was indeterminate
 ##
 .rotary_encoder_decode
-    # TODO
+    # Load previous encoder channel values
+    LOAD    r2   r11
+    ADDI    r11  1
+    LOAD    r3   r11
 
+    # Store current encoder channel values into static memory
+    STORE   r11  r13
+    SUBI    r11  1
+    STORE   r11  r12
+
+    # Shift previous channel values into register r2 formatted as 0000 AB00
+    LSHI    r2   3
+    LSHI    r3   2
+    OR      r2   r3
+
+    # Shift current channel values into register r2, formatted finally as 0000 ABAB
+    LSHI    r12  1
+    OR      r12  r13
+    OR      r2   r12
+
+    # Cases to fill the lights clockwise
+    CMPI    r2  0x1101
+    JEQ     .rotary_encoder_decode:ret_cw
+    CMPI    r2  0x1011
+    JEQ     .rotary_encoder_decode:ret_cw
+    CMPI    r2  0x0100
+    JEQ     .rotary_encoder_decode:ret_cw
+    CMPI    r2  0x0010
+    JEQ     .rotary_encoder_decode:ret_cw
+
+    # Cases to fill the lights counter-clockwise
+    CMPI    r2  0x1110
+    JEQ     .rotary_encoder_decode:ret_ccw
+    CMPI    r2  0x1000
+    JEQ     .rotary_encoder_decode:ret_ccw
+    CMPI    r2  0x0111
+    JEQ     .rotary_encoder_decode:ret_ccw
+    CMPI    r2  0x0001
+    JEQ     .rotary_encoder_decode:ret_ccw
+
+    # If no change could be detected, return 0
+    .rotary_encoder_decode:ret_no_change
+    MOVIU   r10 0x00    # Zero extension
+    MOVIL   r10 0x00
+    RET
+
+    .rotary_encoder_decode:ret_cw
+    MOVIU   r10 0x00    # Zero extension
+    MOVIL   r10 1
+    RET
+
+    .rotary_encoder_decode:ret_ccw
+    MOVIU   r10 0xFF    # Sign extension
+    MOVIL   r10 -1
     RET
 
 #
