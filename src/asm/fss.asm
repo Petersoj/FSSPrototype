@@ -288,6 +288,174 @@
     CALL    .sleep_48bit
 
     RET
+
+##
+# Executes a few frames of the idle animation sequence 3.
+#
+# @return void
+##
+.idle_animation_sequence_3
+ 
+    # Set all indicator values to 0 and all ring display values to 0
+    MOVIL   r1  0x00
+    MOVIU   r1  0x00
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+    MOVIL   r0  0
+    MOVIU   r0  0x00
+    PUSH    r0
+    PUSH    r0
+    PUSH    r0
+
+    MOV     r11 rsp
+    ADDI    r11 1
+    CALL    .set_ring_display_and_indicator_values
+
+    # Pop all display values off the stack
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+
+    # Register r8 will contain the total number of frames in the forward sequence.
+    MOVIU  r8  0x00
+    MOVIL  r8  57
+
+    # Register r9 will contain the loop counter
+
+
+    # Shift a 1 into the LED driver shift register
+    MOVIL   r11 0x01
+    MOVIU   r11 0x00
+    CALL    .led_shift_value
+    CALL    .led_latch_enable
+
+    .idle_animation_sequence_3:forward_loop
+    
+    # Push caller-saved values
+    PUSH    r8
+    PUSH    r9
+
+    # Shift a 0 into the LED driver shift register
+    MOVIL   r11 0x00
+    MOVIU   r11 0x00
+    CALL    .led_shift_value
+    CALL    .led_latch_enable
+
+    # Delay 10 milliseconds for next frame
+    MOVIL   r11 0x10
+    MOVIU   r11 0x27
+    MOVIL   r12 0x00
+    MOVIU   r12 0x00
+    MOVIL   r13 0x00
+    MOVIU   r13 0x00
+    CALL    .sleep_48bit
+
+    ADDI    r8  1
+    CMP     r9  r8
+    JLT     .idle_animation_sequence_3:forward_loop
+
+    
+    # Now 'r9' represents the counter for the reverse loop
+    # Set all indicator values to 0 and all ring display values to 0
+
+    .idle_animation_sequence_3:reverse_loop
+    MOVIL   r1  0x00
+    MOVIU   r1  0x00
+
+    PUSH    r8
+    PUSH    r9
+
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+    PUSH    r1
+    MOVIL   r0  0
+    MOVIU   r0  0x00
+    PUSH    r0
+    PUSH    r0
+    PUSH    r0
+
+    MOV     r11 rsp
+    ADDI    r11 1
+    CALL    .set_ring_display_and_indicator_values
+
+    # Pop all display values off the stack
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+    POP     r0
+
+    # Shift a 1 into the LED driver shift register
+    MOVIL   r11 0x01
+    MOVIU   r11 0x00
+    CALL    .led_shift_value
+    CALL    .led_latch_enable
+
+    POP     r9
+    POP     r8
+
+    # 'r7' represents the inner-loop counter
+
+    .idle_animation_sequence_3:inner_reverse_loop
+    MOVIU  r7  0x00
+    MOVIL  r7  0x00
+
+     # Push caller-saved values
+    PUSH    r7
+    PUSH    r8
+    PUSH    r9
+
+    # Shift a 0 into the LED driver shift register
+    MOVIL   r11 0x00
+    MOVIU   r11 0x00
+    CALL    .led_shift_value    
+
+    POP     r9
+    POP     r8
+    POP     r7
+
+    ADDI    r7  1
+    CMP     r7  r9
+    JLT     .idle_animation_sequence_3:inner_reverse_loop
+
+    PUSH    r7
+    PUSH    r8
+    PUSH    r9
+
+    CALL    .led_latch_enable
+
+    # Delay 10 milliseconds for next frame
+    MOVIL   r11 0x10
+    MOVIU   r11 0x27
+    MOVIL   r12 0x00
+    MOVIU   r12 0x00
+    MOVIL   r13 0x00
+    MOVIU   r13 0x00
+    CALL    .sleep_48bit
+
+    POP     r9
+    POP     r8
+    POP     r7
+
+    SUBI    r9  1
+    CMP     r9  0
+    JGE     .idle_animation_sequence_3:reverse_loop
+
+    RET
+
 #
 # END: Program init and main functions
 #
