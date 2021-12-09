@@ -41,10 +41,10 @@
     .test
     CALL    .button_get_values
     MOV     r11 r10
-    CALL    .button_is_save_pressed
+    CALL    .button_is_playpause_pressed
     CMPI    r10 1
     BNE     1
-    CALL    .idle_animation_sequence
+    CALL    .idle_animation_sequence_2
     JUC     .test
 
 
@@ -179,43 +179,17 @@
     RET
 
 ##
-# Executes a few frames of the idle animation sequence.
+# Executes a few frames of the idle animation sequence 1.
 #
 # @return void
 ##
-.idle_animation_sequence
-    # Set all indicator values to 0 and all ring display values to 0
-    MOVIL   r1  0x00
-    MOVIU   r1  0x00
-    PUSH    r1
-    PUSH    r1
-    PUSH    r1
-    PUSH    r1
-    PUSH    r1
-    PUSH    r1
-    PUSH    r1
-    PUSH    r1
-
-    MOV     r11 rsp
-    ADDI    r11 1
-    CALL    .set_ring_display_and_indicator_values
-
-    # Pop all display values off the stack
-    POP     r0
-    POP     r0
-    POP     r0
-    POP     r0
-    POP     r0
-    POP     r0
-    POP     r0
-    POP     r0
-
+.idle_animation_sequence_1
     # Shift in a few 1s into the LED driver shift register
 
     MOVIL   r0  0x00
     MOVIU   r0  0x00
 
-    .idle_animation_sequence:shift_1s
+    .idle_animation_sequence_1:shift_1s
 
     # Push caller-saved registers
     PUSH    r0
@@ -225,41 +199,10 @@
     CALL    .led_shift_value
     CALL    .led_latch_enable
 
-    # Delay 50 milliseconds for next frame
-    MOVIL   r11 0x50
-    MOVIU   r11 0xC3
-    MOVIL   r12 0x00
-    MOVIU   r12 0x00
-    MOVIL   r13 0x00
-    MOVIU   r13 0x00
-    CALL    .sleep_48bit
-
-    # Pop caller-saved registers
-    POP     r0
-
-    ADDI    r0  1
-    CMPI    r0  5
-    JLO     .idle_animation_sequence:shift_1s
-
-    # Shift in a few 0s into the LED driver shift register
-
-    MOVIL   r0  0x00
-    MOVIU   r0  0x00
-
-    .idle_animation_sequence:shift_0s
-
-    # Push caller-saved registers
-    PUSH    r0
-
-    MOVIL   r11 0x00
-    MOVIU   r11 0x00
-    CALL    .led_shift_value
-    CALL    .led_latch_enable
-
-    # Delay 50 milliseconds for next frame
-    MOVIL   r11 0x50
-    MOVIU   r11 0xC3
-    MOVIL   r12 0x00
+    # Delay 100 milliseconds for next frame
+    MOVIL   r11 0xA0
+    MOVIU   r11 0x86
+    MOVIL   r12 0x01
     MOVIU   r12 0x00
     MOVIL   r13 0x00
     MOVIU   r13 0x00
@@ -270,10 +213,81 @@
 
     ADDI    r0  1
     CMPI    r0  3
-    JLO     .idle_animation_sequence:shift_0s
+    JLO     .idle_animation_sequence_1:shift_1s
+
+    # Shift in a few 0s into the LED driver shift register
+
+    MOVIL   r0  0x00
+    MOVIU   r0  0x00
+
+    .idle_animation_sequence_1:shift_0s
+
+    # Push caller-saved registers
+    PUSH    r0
+
+    MOVIL   r11 0x00
+    MOVIU   r11 0x00
+    CALL    .led_shift_value
+    CALL    .led_latch_enable
+
+    # Delay 100 milliseconds for next frame
+    MOVIL   r11 0xA0
+    MOVIU   r11 0x86
+    MOVIL   r12 0x01
+    MOVIU   r12 0x00
+    MOVIL   r13 0x00
+    MOVIU   r13 0x00
+    CALL    .sleep_48bit
+
+    # Pop caller-saved registers
+    POP     r0
+
+    ADDI    r0  1
+    CMPI    r0  3
+    JLO     .idle_animation_sequence_1:shift_0s
 
     RET
 
+##
+# Executes a few frames of the idle animation sequence 2.
+#
+# @return void
+##
+.idle_animation_sequence_2
+    # Shift a 1 into the LED driver shift register
+    MOVIL   r11 0x01
+    MOVIU   r11 0x00
+    CALL    .led_shift_value
+    CALL    .led_latch_enable
+
+    # Delay 200 milliseconds for next frame
+    MOVIL   r11 0x40
+    MOVIU   r11 0x0D
+    MOVIL   r12 0x03
+    MOVIU   r12 0x00
+    MOVIL   r13 0x00
+    MOVIU   r13 0x00
+    CALL    .sleep_48bit
+
+    # Shift in two 0s into the LED driver shift register
+    MOVIL   r11 0x00
+    MOVIU   r11 0x00
+    CALL    .led_shift_value
+    MOVIL   r11 0x00
+    MOVIU   r11 0x00
+    CALL    .led_shift_value
+    CALL    .led_latch_enable
+
+    # Delay 200 milliseconds for next frame
+    MOVIL   r11 0x40
+    MOVIU   r11 0x0D
+    MOVIL   r12 0x03
+    MOVIU   r12 0x00
+    MOVIL   r13 0x00
+    MOVIU   r13 0x00
+    CALL    .sleep_48bit
+
+    RET
 #
 # END: Program init and main functions
 #
@@ -592,16 +606,14 @@
     CALL    .i2c_read_byte
 
     # Shift right 3 times to acquire bits of push buttons values
-    RSHI    r11 3
+    RSHI    r10 3
 
     # Invert return value of '.i2c_read_byte' since push buttons on Main PCB have a pull-up
     # (active low) configuration
-    NOT     r11 r11
+    NOT     r10 r10
 
     # Zero out everything except 5 LSBs
-    ANDI    r11 0b0001_1111
-
-    MOV     r10 r11
+    ANDI    r10 0b0001_1111
 
     RET
 
@@ -614,7 +626,25 @@
 #
 
 ##
-# Decodes a quadrature-encoded rotary encoder signal (channel A and channel B).
+# Decodes a quadrature-encoded rotary encoder signal (channel A and channel B). This function
+# follows the following current-state-next-state lookup table:
+#  | Previous A | Previous B | Current A  | Current B  | Direction  |
+#  | 0          | 0          | 0          | 0          | N/A        |
+#  | 0          | 0          | 0          | 1          | CCW        |
+#  | 0          | 0          | 1          | 0          | CW         |
+#  | 0          | 0          | 1          | 1          | N/A        |
+#  | 0          | 1          | 0          | 0          | CW         |
+#  | 0          | 1          | 0          | 1          | N/A        |
+#  | 0          | 1          | 1          | 0          | N/A        |
+#  | 0          | 1          | 1          | 1          | CCW        |
+#  | 1          | 0          | 0          | 0          | CCW        |
+#  | 1          | 0          | 0          | 1          | N/A        |
+#  | 1          | 0          | 1          | 0          | N/A        |
+#  | 1          | 0          | 1          | 1          | CW         |
+#  | 1          | 1          | 0          | 0          | N/A        |
+#  | 1          | 1          | 0          | 1          | CW         |
+#  | 1          | 1          | 1          | 0          | CCW        |
+#  | 1          | 1          | 1          | 1          | N/A        |
 #
 # @param r11 - a pointer to an array of length 2 containing the previously-saved encoder channel
 #              values with the following mapping:
