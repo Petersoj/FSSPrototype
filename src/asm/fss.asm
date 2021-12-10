@@ -154,8 +154,9 @@
     MOV     r11 r10
     CALL    .button_is_save_pressed
     CMPI    r10 1
-    BNE     1
+    JNE     .handle_buttons:skip_button_save_pressed
     CALL    .button_save_pressed
+    .handle_buttons:skip_button_save_pressed
     POP     r10 # Pop caller-saved registers
 
     PUSH    r10 # Push caller-saved registers
@@ -163,9 +164,10 @@
     MOV     r11 r10
     CALL    .button_is_program_pressed
     CMPI    r10 0
-    BEQ     2
+    JEQ     .handle_buttons:skip_button_program_pressed
     MOV     r11 r10
     CALL    .button_program_pressed
+    .handle_buttons:skip_button_program_pressed
     POP     r10 # Pop caller-saved registers
 
     PUSH    r10 # Push caller-saved registers
@@ -173,8 +175,9 @@
     MOV     r11 r10
     CALL    .button_is_playpause_pressed
     CMPI    r10 1
-    BNE     1
+    JNE     .handle_buttons:button_playpause_pressed
     CALL    .button_playpause_pressed
+    .handle_buttons:button_playpause_pressed
     POP     r10 # Pop caller-saved registers
 
     RET
@@ -264,7 +267,7 @@
     JUC     .process_rotary_encoder:changed_ret
 
     .process_rotary_encoder:handle_ccw
-    # Decrement if value is not less than or equal to 0
+    # Decrement if value is not less than to 0
     LOAD    r1  r13
     SUBI    r1  1
     CMPI    r1  0
@@ -288,6 +291,40 @@
     RET
 
     .process_rotary_encoder:unchanged_ret
+
+    RET
+
+##
+# Sets the indicator values in the '.display_values_active'.
+#
+# @param r11 - the one-hot encoded indicator display values with the following bit mapping:
+#              | Bit Index | Mapping                                     |
+#              | 0         | Save indicator value (must be 0 or 1)       |
+#              | 1         | Program1 indicator value (must be 0 or 1)   |
+#              | 2         | Program2 indicator value (must be 0 or 1)   |
+#              | 3         | Program3 indicator value (must be 0 or 1)   |
+#              | 4         | Play/Pause indicator value (must be 0 or 1) |
+#
+# @return void
+##
+.set_display_values_active_indicators
+    MOV     r2  .display_values_active
+    ADDI    r2  3
+
+    MOVIL   r0  0x00
+    MOVIU   r0  0x00
+
+    .set_display_values_active_indicators:loop
+
+    MOV     r1  r11
+    RSH     r1  r0
+    ANDI    r1  0x01
+    STORE   r2  r1
+    ADDI    r2  1
+
+    ADDI    r0  1
+    CMPI    r0  5
+    JLO     .set_display_values_active_indicators:loop
 
     RET
 
@@ -323,40 +360,6 @@
 
     # If this line is ever reached, then there is no active program selected, which should never
     # happen...
-    RET
-
-##
-# Sets the indicator values in the '.display_values_active'.
-#
-# @param r11 - the one-hot encoded indicator display values with the following bit mapping:
-#              | Bit Index | Mapping                                     |
-#              | 0         | Save indicator value (must be 0 or 1)       |
-#              | 1         | Program1 indicator value (must be 0 or 1)   |
-#              | 2         | Program2 indicator value (must be 0 or 1)   |
-#              | 3         | Program3 indicator value (must be 0 or 1)   |
-#              | 4         | Play/Pause indicator value (must be 0 or 1) |
-#
-# @return void
-##
-.set_display_values_active_indicators
-    MOV     r2  .display_values_active
-    ADDI    r2  3
-
-    MOVIL   r0  0x00
-    MOVIU   r0  0x00
-
-    .set_display_values_active_indicators:loop
-
-    MOV     r1  r11
-    RSH     r1  r0
-    ANDI    r1  0x01
-    STORE   r2  r1
-    ADDI    r2  1
-
-    ADDI    r0  1
-    CMPI    r0  5
-    JLO     .set_display_values_active_indicators:loop
-
     RET
 
 ##
@@ -1227,13 +1230,8 @@
 #               decoded, 0 if there was no change or decoding was indeterminate
 ##
 .rotary_encoder_decode
-
-# TODO IMPLEMEMNT WITH
-# @param r11 - a pointer to a value in memory that will contain a state counter for debouncing
-#              the encoder signal transitions
-
-
-    CMPI    r12 0b0000_00000
+    ANDI    r12 0b0000_00011
+    CMPI    r12 0
     JNE     .rotary_encoder_decode:a_b_not_zeros
 
     MOVIL   r0  0x01
@@ -1298,7 +1296,6 @@
 
     # Zero out everything except 6 LSBs
     ANDI    r10 0b0011_1111
-    MOVIU   r10 0x00
 
     RET
 
