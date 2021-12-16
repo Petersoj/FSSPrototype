@@ -10,17 +10,29 @@ This FSS prototype demonstrates the future of interfacing with a music synthesiz
 - Isabella Gilman
 - Nate Hansen
 
-## Assembling `fss.asm`
+## How This Repository is Organized
+- [`.formatter/verilog/`](.formatter/verilog/) contains the Verilog source code formatter. More info on it [here](https://github.com/Petersoj/FSSPrototype#verilog-source-formatting-for-this-repository).
+- [`CompactRISC16/`](https://github.com/Petersoj/CompactRISC16) is a git submodule of our custom CompactRISC16 (CR16) processor repository. Our FSS prototype firmware runs on this custom CR16 processor.
+- [`assets/`](assets/) contains various asset files such as SolidWorks sketches and parts, dimension drawings for laser and water jet cutting, schematic and PCB files for our Main board and External board, pictures, etc.
+- [`resources/bram_init/`](resources/bram_init/) contains block RAM (BRAM) initialization files encoded in UTF-8 hexadecimal characters.
+- [`resources/pin_assignments/`](resources/pin_assignments/) contains exported CSVs of pin assignments for the various Verilog top modules in this repository.
+- [`src/asm/`](src/asm/) contains assembly source code files written in accordance with our custom CR16 ISA. More info on [`fss.asm`](src/asm/fss.asm) (the main program/firmware of our FSS prototype) can be found [here](https://github.com/Petersoj/FSSPrototype#assembling-fssasm).
+- [`src/v/rtl/`](src/v/rtl/) contains the Verilog and SystemVerilog RTL code for our FSS prototype.
+  - [`fss_top.sv`](src/v/rtl/fss_top.sv) instantiates BRAM, the External Memory interface module, and the CR16 processor. Additionally, it contains some logic to display various values on the 7-segment displays on the FPGA board and allows a user to address into BRAM using slide switches.
+  - [`ext_mem.sv`](src/v/rtl/ext/ext_mem.sv) is the External Memory interface module which contains memory-mapping logic and instantiates the two peripherals that the FSS prototype requires: [`clock_divided_counter.sv`](src/v/rtl/ext/peripheral/clock_divided_counter.sv) which is used as a microsecond counter and [`i2c_bus.sv`](src/v/rtl/ext/peripheral/i2c_bus.sv) which is used to interface with the open-drain SCL and SDA bus lines for I2C communication.
+- [`src/v/tb/`](src/v/tb/) contains the Verilog and SystemVerilog testbench code for testing the various FSS prototype RTL modules.
+
+## Assembling [`fss.asm`](src/asm/fss.asm)
+[`fss.asm`](src/asm/fss.asm) contains the assembly source code for the firmware of the FSS prototype. This assembly source code is compiled to a [machine code data file](resources/bram_init/fss.dat) which is loaded into BRAM upon FPGA programming. To assemble/compile `fss.asm`, follow these steps:
 1. Ensure that the `CompactRISC16` submodule has been initialized and updated via: `git submodule update --init`
 2. Run the assembler via:
-
    ```
    ./CompactRISC16/assembler/assembler src/asm/fss.asm -o resources/bram_init/fss.dat -p 4096 -v 0 -b HEX
    ```
   * `-p 4096` sets the max padding lines to 4096 (which is 2^12 due to `fss_top` instantiating `bram` with a 12-bit address space) in the output machine code file
   * `-v 0` sets the padding line value to 0 (which initializes empty BRAM to all zeros) in the output machine code file
   * `-b HEX` sets the number base to hexadecimal in the output machine code file
-3. More about the CR16 assembler used in this project [here](https://github.com/Petersoj/CompactRISC16#assembler).
+3. More info about the CR16 assembler used in this project can be found [here](https://github.com/Petersoj/CompactRISC16#assembler).
 
 ## Verilog Source Naming Conventions and Format
 - File names, module names, and wire/reg assignment names should be snake case (e.g. `my_verilog_module.v`)
@@ -47,7 +59,7 @@ This FSS prototype demonstrates the future of interfacing with a music synthesiz
   - Clock `@always` blocks which generally should only include `posedge I_CLK` in the sensitivty list
   - Other `@always` (such as internal finite state machines) or `task` blocks
 
-## Verilog Source Formatting
+## Verilog Source Formatting For This Repository
 To format verilog source code, use the [`istyle-verilog-formatter`](https://github.com/thomasrussellmurphy/istyle-verilog-formatter) tool via the `format` script:
 ```
 .formatter/verilog/format <paths to files or directories>

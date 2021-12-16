@@ -120,7 +120,6 @@ always @(posedge I_CLK or negedge I_NRESET) begin
         else
             clk_count <= clk_count;
 
-
         if (!I_MEM_ADDRESS_B_SET_LOWER && I_MEM_ADDRESS_B_SET_UPPER)
             i_mem_address_b <= {i_mem_address_b[15:8], I_MEM_ADDRESS_B_BITS};
         else if (!I_MEM_ADDRESS_B_SET_UPPER && I_MEM_ADDRESS_B_SET_LOWER)
