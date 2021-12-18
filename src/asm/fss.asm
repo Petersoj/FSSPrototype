@@ -1908,7 +1908,7 @@
 #
 # @param r11 - a pointer to the array to copy from
 # @param r12 - a pointer to the array to copy to
-# @param r13 - the length of to copy
+# @param r13 - the number of words to copy
 #
 # @return void
 ##

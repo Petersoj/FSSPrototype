@@ -19,7 +19,7 @@ module i2c_bus
         inout O_SCL,
         inout O_SDA);
 
-assign O_SCL = I_SCL_T ? 1'bz : 1'b0;
-assign O_SDA = I_SDA_T ? 1'bz : 1'b0;
+assign O_SCL = I_SCL_T ? 1'bZ : 1'b0;
+assign O_SDA = I_SDA_T ? 1'bZ : 1'b0;
 
 endmodule
