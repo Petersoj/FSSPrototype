@@ -1,0 +1,52 @@
+\documentclass[conference]{IEEEtran}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{ragged2e}
+\usepackage{multirow} % For multirows in tables
+\usepackage{float} % Appending the [H] option forces the placement of a figure in the place it's in the code
+\usepackage[numbers]{natbib} % For integration with bibliography commands
+
+\begin{document}
+
+\title{Ethical, Environmental, Economic and Social Impact of Our Project and Design\\[10pt]
+\Large{Computer Design Laboratory ECE 3710}\\
+\Large{Fall 2021}\\
+\Large{The University of Utah}}
+
+\author{\IEEEauthorblockN{Jacob Peterson}
+\IEEEauthorblockA{\textit{Computer Engineering 2022}\\
+\textit{University of Utah}\\
+Salt Lake City, UT}
+\and
+\IEEEauthorblockN{Brady Hartog}
+\IEEEauthorblockA{\textit{Computer Engineering 2022}\\
+\textit{University of Utah}\\
+Salt Lake City, UT}
+\and
+\IEEEauthorblockN{Isabella Gilman}
+\IEEEauthorblockA{\textit{Computer Engineering 2023}\\
+\textit{University of Utah}\\
+Salt Lake City, UT}
+\and
+\IEEEauthorblockN{Nate Hansen}
+\IEEEauthorblockA{\textit{Computer Engineering 2023}\\
+\textit{University of Utah}\\
+Salt Lake City, UT}
+}
+
+\maketitle
+
+\section{Ethical and Societal Impact of the FSS Prototype}
+The synthesizer our group built would have minimal impact on the environment and on public health and safety, however, we would have to make further considerations to determine if it is sustainable to produce. Newer iterations of the device would be produced based on industry production strategies to eliminate the ``Do-It-Yourself'' elements of the prototype design.
+
+The exterior of our synthesizer was built mainly out of acrylic, and included a real wood veneer covering and a 3D-printed external housing. The interior electrical components were soldered onto a PCB that was interfaced and powered through a USB cable. Continuing to manufacture more of this product would mean use of more plastic and production of more PCBs. The plastic will not break down in nature when the synthesizer is disposed of, and the PCBs will require harsh chemicals for their development. None of these materials are regulated and do not pose a threat to manufacturers or consumers. We believe the greatest environmental impact of our design would be shipping it by plane from its production hub, which would likely be southeast Asia. Since this is only a method of transportation for expedited shipping, and travel by sea freight is much more $CO_2$ efficient, the ethical responsibility lies with the consumer to chose a shipping method that aligns with their values.
+
+The current chip shortage may impact the production of these synthesizers on a larger scale. Our prototype's main program ran on our custom 16-bit RISC CPU which was compiled to run on an FPGA, but a more finalized version would use various fabricated chips, such as microcontrollers and other ASICs, instead of an FPGA. The chip shortage may make this difficult because manufacturing custom CPUs would be more costly and would likely be backlogged.
+
+Although all other materials are readily available, their cost indicates that our device may not be sustainable to produce according to its prototype design. In total, the FSS Prototype costs approximately \$500 in material, and automated assembly at a larger scale would also carry a cost. Although some components and materials in the Bill of Materials (BOM) were not used, the final product was quite expensive and had a lengthy assembly process. However, given what we have learned about the assembly process, we believe we could enhance the BOM for future models and devise a more strategic, sustainable device composition that could be produced at a large scale.
+
+\end{document}
