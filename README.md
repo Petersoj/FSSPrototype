@@ -14,7 +14,7 @@ This FSS prototype demonstrates the future of interfacing with a music synthesiz
 - [`.formatter/verilog/`](.formatter/verilog/) contains the Verilog source code formatter. More info on it [here](https://github.com/Petersoj/FSSPrototype#verilog-source-formatting-for-this-repository).
 - [`CompactRISC16/`](https://github.com/Petersoj/CompactRISC16) is a git submodule of our custom CompactRISC16 (CR16) processor repository. Our FSS prototype firmware runs on this custom CR16 processor.
 - [`assets/`](assets/) contains various asset files such as SolidWorks sketches and parts, dimension drawings for laser and water jet cutting, schematic and PCB files for our Main board and External board, pictures, etc.
-- [`docs/`](docs/) contains our final project reports and Bill of Materials (BOM).
+- [`docs/`](docs/) contains our final project reports and Bill of Materials (BOM). A final report is located [here](docs/Reports/Final%20Report/Final%20Report.pdf).
 - [`resources/bram_init/`](resources/bram_init/) contains block RAM (BRAM) initialization files encoded in UTF-8 hexadecimal characters.
 - [`resources/pin_assignments/`](resources/pin_assignments/) contains exported CSVs of pin assignments for the various Verilog top modules in this repository.
 - [`src/asm/`](src/asm/) contains assembly source code files written in accordance with our custom CR16 ISA. More info on [`fss.asm`](src/asm/fss.asm) (the main program/firmware of our FSS prototype) can be found [here](https://github.com/Petersoj/FSSPrototype#assembling-fssasm).
@@ -22,6 +22,22 @@ This FSS prototype demonstrates the future of interfacing with a music synthesiz
   - [`fss_top.sv`](src/v/rtl/fss_top.sv) instantiates BRAM, the External Memory interface module, and the CR16 processor. Additionally, it contains some logic to display various values on the 7-segment displays on the FPGA board and allows a user to address into BRAM using slide switches.
   - [`ext_mem.sv`](src/v/rtl/ext/ext_mem.sv) is the External Memory interface module which contains memory-mapping logic and instantiates the two peripherals that the FSS prototype requires: [`clock_divided_counter.sv`](src/v/rtl/ext/peripheral/clock_divided_counter.sv) which is used as a microsecond counter and [`i2c_bus.sv`](src/v/rtl/ext/peripheral/i2c_bus.sv) which is used to interface with the open-drain SCL and SDA bus lines for I2C communication.
 - [`src/v/tb/`](src/v/tb/) contains the Verilog and SystemVerilog testbench code for testing the various FSS prototype RTL modules.
+
+## Project Photos
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/demo_setup.jpg" width="100%" />
+</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/fss_walnut_front.jpg" width="50%" />
+  <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/fss_walnut_back.jpg" width="50%" />
+</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/housing_v1_front.jpg" width="50%" />
+  <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/housing_v1_back.jpg" width="50%" />
+</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/main_pcb_assembly.jpg" width="100%" />
+</p>
 
 ## Assembling [`fss.asm`](src/asm/fss.asm)
 [`fss.asm`](src/asm/fss.asm) contains the assembly source code for the firmware of the FSS prototype. This assembly source code is compiled to a [machine code data file](resources/bram_init/fss.dat) which is loaded into BRAM upon FPGA programming. To assemble/compile `fss.asm`, follow these steps:
