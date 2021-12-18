@@ -1,0 +1,43 @@
+Description,Mfg. Part Number,Listing,Schematic Reference,Quantity,Total Price ($)
+"SMD LED, amber, package 1206",HSMA-C350,Digi-Key,Main: LED1 - LED62,139,48.29
+"LED driver, 16-bit shift-register with latching",STP16CPC05MTR,Digi-Key,Main: U1 - U4,10,17.76
+"Push button, flat, tactile, SPST, normally open",TS05-66-50-BK-260-SMT-67,Digi-Key,Main: U5 - U9,13,4.56
+"Rotary encoder, mechanical, 15mm D-shaft, 24 PPR, no detents",PEC11R-4015F-N0024 ,Mouser,Main: SW1 - SW3,8,11.52
+"I/O port expander, 8-bit, I2C protocol",PCF8574ADWR ,Mouser,"Main: U10, U11",6,11.7
+"USB Mini Type B connector, female, 1.5A",GMSB0522102Y7EU,Mouser,Main: USB1,3,4.2
+"SMD resistor, 1/4W 1Kohms 1%",—,Mouser,Main: R22 - R25,10,1.62
+"SMD resistor, 1/4W 2Kohms 1%",—,Mouser,"Main: R26, R27",6,1.14
+"SMD resistor, 1/4W 10Kohms 1%",—,Mouser,"Main: R1 - R6, R11, R12, R15 - R21",35,5.25
+"SMD resistor, 1/4W 330ohms 1%",—,Mouser,"Main: R28, R29",6,1.14
+"SMD ceramic capacitor, 10V 0.1uF 0805 5%",—,Mouser,Main: C1,4,2.52
+"Various SMD resistors, 1/8W 0-10MOhm 1%",—,Amazon,—,1,8.18
+"USB Type A to Mini B braided cable, USB 2.0, black",—,Amazon,—,2,15.06
+SPST rocker switch,1941.1103 ,Mouser,Breakout: SW1,3,4.41
+"USB Type A connector, female, 1.5A",USB1046-GF-0190-L-B-A,Mouser,Breakout: USB-A,3,2.25
+"USB Type B connector, female, 1.5A",61729-0010BLF ,Mouser,Breakout: USB-B,3,3.51
+"Pin header, 1x2, right angle 2.54mm",22-28-9023 ,Mouser,Breakout: I2C,4,0.96
+"DC-DC buck converter, 3A current rating",LM2596,Amazon,"Breakout: IN+, IN-, OUT+, OUT-",5,9.69
+"Digi-Key shipping, tariff, sales tax",—,—,—,—,16.79
+Mouser shipping and sales tax,—,—,—,—,11.88
+JLCPCB PCBs and shipping,—,—,—,—,57.38
+"1/8"" Acrylic sheet, opaque black, 12"" x 24""",2025 Black,Delvie's Plastics,—,1,11.5
+"1/8"" Acrylic sheet, transparent bronze, 12"" x 12""",2370 Bronze,Delvie's Plastics,—,1,7.25
+"1/8"" Acrylic sheet, frosted clear, 12"" x 12""",—,Delvie's Plastics,—,1,6
+"1/8"" Acrylic sheet, transparent clear, 12"" x 12""",—,Delvie's Plastics,—,1,5.25
+"1/4"" Acrylic sheet, transparent clear, 12"" x 24""",—,Delvie's Plastics,—,1,15.75
+"Wood veneer, mahogany",—,Woodcraft,—,1,12.83
+"Wood veneer, walnut",—,Woodcraft,—,1,13.9
+"Cyanoacrylate super glue liquid, 5 grams",—,Ace Hardware,—,2,9.82
+"Water-based wood finish, semi-gloss, 0.5 pt",—,Ace Hardware,—,1,13.9
+Adhesive foam tape,—,Amazon,—,1,12.92
+"Machine screw caps, brushed aluminum",—,Amazon,—,8,12
+"Machine screws, counter-sink, #6-32, 1/2"" length",—,—,—,8,—
+"Machine screws, round head, #6-32, 1.5"" length",—,—,—,4,—
+5V DC wall adapter,—,—,—,2,—
+USB Type A to Type B cable,—,—,—,2,—
+"PLA 3D printing filament, black",—,—,—,—,—
+"Terasic DE1-SoC board, Cyclone V",Cyclone V: 5CSEMA5F31C6,—,—,2,—
+,,,,,
+,,,,,Grand Total
+,,,,,360.93
+Estimate for two (2) fully assembled FSS prototypes.,,,,,
