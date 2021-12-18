@@ -28,12 +28,12 @@ This FSS prototype demonstrates the future of interfacing with a music synthesiz
   <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/demo_setup.jpg" width="100%" />
 </p>
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/fss_walnut_front.jpg" width="50%" />
-  <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/fss_walnut_back.jpg" width="50%" />
+  <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/fss_walnut_front.jpg" width="49%" />
+  <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/fss_walnut_back.jpg" width="49%" />
 </p>
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/housing_v1_front.jpg" width="50%" />
-  <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/housing_v1_back.jpg" width="50%" />
+  <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/housing_v1_front.jpg" width="49%" />
+  <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/housing_v1_back.jpg" width="49%" />
 </p>
 <p align="center">
   <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/main_pcb_assembly.jpg" width="100%" />
