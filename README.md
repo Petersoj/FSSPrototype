@@ -14,7 +14,7 @@ This FSS prototype demonstrates the future of interfacing with a music synthesiz
 - [`.formatter/verilog/`](.formatter/verilog/) contains the Verilog source code formatter. More info on it [here](https://github.com/Petersoj/FSSPrototype#verilog-source-formatting-for-this-repository).
 - [`CompactRISC16/`](https://github.com/Petersoj/CompactRISC16) is a git submodule of our custom CompactRISC16 (CR16) processor repository. Our FSS prototype firmware runs on this custom CR16 processor.
 - [`assets/`](assets/) contains various asset files such as SolidWorks sketches and parts, dimension drawings for laser and water jet cutting, schematic and PCB files for our Main board and External board, pictures, etc.
-- [`docs/`](docs/) contains our final project reports and Bill of Materials (BOM). A final report is located [here](docs/Reports/Final%20Report/Final%20Report.pdf).
+- [`docs/`](docs/) contains our final project reports and Bill of Materials (BOM). Our final report is located [here](docs/Reports/Final%20Report/Final%20Report.pdf).
 - [`resources/bram_init/`](resources/bram_init/) contains block RAM (BRAM) initialization files encoded in UTF-8 hexadecimal characters.
 - [`resources/pin_assignments/`](resources/pin_assignments/) contains exported CSVs of pin assignments for the various Verilog top modules in this repository.
 - [`src/asm/`](src/asm/) contains assembly source code files written in accordance with our custom CR16 ISA. More info on [`fss.asm`](src/asm/fss.asm) (the main program/firmware of our FSS prototype) can be found [here](https://github.com/Petersoj/FSSPrototype#assembling-fssasm).

@@ -1,0 +1,67 @@
+# Copyright (C) 2020  Intel Corporation. All rights reserved.
+# Your use of Intel Corporation's design tools, logic functions
+# and other software and tools, and any partner logic
+# functions, and any output files from any of the foregoing
+# (including device programming or simulation files), and any
+# associated documentation or information are expressly subject
+# to the terms and conditions of the Intel Program License
+# Subscription Agreement, the Intel Quartus Prime License Agreement,
+# the Intel FPGA IP License Agreement, or other applicable license
+# agreement, including, without limitation, that your use is for
+# the sole purpose of programming logic devices manufactured by
+# Intel and sold by Intel or its authorized distributors.  Please
+# refer to the applicable agreement for further details, at
+# https://fpgasoftware.intel.com/eula.
+
+# Quartus Prime Version 20.1.1 Build 720 11/11/2020 SJ Lite Edition
+# Generated on: Mon Dec 20 02:47:07 2021
+
+# Note: The column header names should not be changed if you wish to import this .csv file into the Quartus Prime software.
+
+To,Direction,Location,I/O Bank,VREF Group,I/O Standard,Reserved,Current Strength,Slew Rate,Differential Pair,Strict Preservation
+IO_SCL,Bidir,PIN_V10,3,B3_N0,3.3-V LVTTL,,,,,
+IO_SDA,Bidir,PIN_W10,3,B3_N0,3.3-V LVTTL,,,,,
+I_CLK,Input,PIN_P11,3,B3_N0,3.3-V LVTTL,,,,,
+I_MEM_ADDRESS_B_BITS[7],Input,PIN_A14,7,B7_N0,3.3-V LVTTL,,,,,
+I_MEM_ADDRESS_B_BITS[6],Input,PIN_A13,7,B7_N0,3.3-V LVTTL,,,,,
+I_MEM_ADDRESS_B_BITS[5],Input,PIN_B12,7,B7_N0,3.3-V LVTTL,,,,,
+I_MEM_ADDRESS_B_BITS[4],Input,PIN_A12,7,B7_N0,3.3-V LVTTL,,,,,
+I_MEM_ADDRESS_B_BITS[3],Input,PIN_C12,7,B7_N0,3.3-V LVTTL,,,,,
+I_MEM_ADDRESS_B_BITS[2],Input,PIN_D12,7,B7_N0,3.3-V LVTTL,,,,,
+I_MEM_ADDRESS_B_BITS[1],Input,PIN_C11,7,B7_N0,3.3-V LVTTL,,,,,
+I_MEM_ADDRESS_B_BITS[0],Input,PIN_C10,7,B7_N0,3.3-V LVTTL,,,,,
+I_MEM_ADDRESS_B_SET_LOWER,Input,PIN_A7,7,B7_N0,3.3 V Schmitt Trigger,,,,,
+I_MEM_ADDRESS_B_SET_UPPER,Input,PIN_B8,7,B7_N0,3.3 V Schmitt Trigger,,,,,
+I_NRESET,Input,PIN_F15,7,B7_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[3],Output,,,,3.3-V LVTTL,,,,,,,,,,,,,
+O_7_SEGMENT_DISPLAY[2],Output,,,,3.3-V LVTTL,,,,,,,,,,,,,
+O_7_SEGMENT_DISPLAY[1],Output,,,,3.3-V LVTTL,,,,,,,,,,,,,
+O_7_SEGMENT_DISPLAY[0],Output,,,,3.3-V LVTTL,,,,,,,,,,,,,
+O_7_SEGMENT_DISPLAY[0][0],Output,PIN_C14,7,B7_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[0][1],Output,PIN_E15,7,B7_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[0][2],Output,PIN_C15,7,B7_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[0][3],Output,PIN_C16,7,B7_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[0][4],Output,PIN_E16,7,B7_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[0][5],Output,PIN_D17,7,B7_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[0][6],Output,PIN_C17,7,B7_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[1][0],Output,PIN_C18,7,B7_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[1][1],Output,PIN_D18,6,B6_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[1][2],Output,PIN_E18,6,B6_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[1][3],Output,PIN_B16,7,B7_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[1][4],Output,PIN_A17,7,B7_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[1][5],Output,PIN_A18,7,B7_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[1][6],Output,PIN_B17,7,B7_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[2][0],Output,PIN_B20,6,B6_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[2][1],Output,PIN_A20,7,B7_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[2][2],Output,PIN_B19,7,B7_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[2][3],Output,PIN_A21,6,B6_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[2][4],Output,PIN_B21,6,B6_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[2][5],Output,PIN_C22,6,B6_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[2][6],Output,PIN_B22,6,B6_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[3][0],Output,PIN_F21,6,B6_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[3][1],Output,PIN_E22,6,B6_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[3][2],Output,PIN_E21,6,B6_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[3][3],Output,PIN_C19,7,B7_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[3][4],Output,PIN_C20,6,B6_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[3][5],Output,PIN_D19,6,B6_N0,3.3-V LVTTL,,,,,
+O_7_SEGMENT_DISPLAY[3][6],Output,PIN_E17,6,B6_N0,3.3-V LVTTL,,,,,
