@@ -1,4 +1,4 @@
-<p align="center"><a href="https://petersoj.github.io/FSSPrototype/" target="_blank"><img width="60%" src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/top_panel_artwork.png" alt="FSS prototype top-panel concept"></a></p>
+<p align="center"><a href="https://petersoj.github.io/FSSPrototype/" target="_blank"><img width="80%" src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/repo_cover_art.png" alt="FSS prototype top-panel concept"></a></p>
 
 # Fully-Synchronized Synthesizer (FSS) Prototype
 
