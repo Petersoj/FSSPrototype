@@ -23,6 +23,9 @@ This FSS prototype demonstrates the future of interfacing with a music synthesiz
   - [`ext_mem.sv`](src/v/rtl/ext/ext_mem.sv) is the External Memory interface module which contains memory-mapping logic and instantiates the two peripherals that the FSS prototype requires: [`clock_divided_counter.sv`](src/v/rtl/ext/peripheral/clock_divided_counter.sv) which is used as a microsecond counter and [`i2c_bus.sv`](src/v/rtl/ext/peripheral/i2c_bus.sv) which is used to interface with the open-drain SCL and SDA bus lines for I2C communication.
 - [`src/v/tb/`](src/v/tb/) contains the Verilog and SystemVerilog testbench code for testing the various FSS prototype RTL modules.
 
+## Project Videos
+We wanted to create a professional video in the form of a product advertisement showing the beauty we captured in the FSS prototype's design. That video is available [here](https://www.youtube.com/watch?v=7kbVaDARXf8). Additionally, a demo video showing the basic usage and functional overview of the FSS prototype will be available soon.
+
 ## Project Photos
 <p align="center">
   <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/demo_setup.jpg" width="100%" />
