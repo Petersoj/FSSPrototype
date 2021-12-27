@@ -24,7 +24,7 @@ This FSS prototype demonstrates the future of interfacing with a music synthesiz
 - [`src/v/tb/`](src/v/tb/) contains the Verilog and SystemVerilog testbench code for testing the various FSS prototype RTL modules.
 
 ## Project Videos
-We wanted to create a professional video in the form of a product advertisement showing the beauty we captured in the FSS prototype's design. That video is available [here](https://www.youtube.com/watch?v=7kbVaDARXf8). Additionally, a demo video showing the basic usage and functional overview of the FSS prototype will be available soon.
+We wanted to create a professional video in the form of a product advertisement showing the beauty we captured in the FSS prototype's design. That video is available [here](https://www.youtube.com/watch?v=7kbVaDARXf8). Additionally, a demo video showing the basic usage and functional overview of the FSS prototype is available [here](https://www.youtube.com/watch?v=SxbYaiAhI7I).
 
 ## Project Photos
 <p align="center">
