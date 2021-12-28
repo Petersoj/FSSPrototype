@@ -35,11 +35,7 @@ We wanted to create a professional video in the form of a product advertisement 
   <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/fss_walnut_back.jpg" width="49%" />
 </p>
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/housing_v1_front.jpg" width="49%" />
-  <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/housing_v1_back.jpg" width="49%" />
-</p>
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/main_pcb_assembly.jpg" width="100%" />
+  <img src="https://raw.githubusercontent.com/Petersoj/FSSPrototype/main/.github/images/fss_assembly.jpg" width="100%" />
 </p>
 
 ## Assembling [`fss.asm`](src/asm/fss.asm)
